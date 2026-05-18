@@ -1,9 +1,6 @@
 import React, {
   useState,
   useEffect,
-  useCallback,
-  useMemo,
-  useRef,
 } from "react";
 import {
   ArrowRight,
@@ -201,97 +198,199 @@ const AnimatedGradient = () => {
 
 const Navbar = ({ scrolled }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { isMobile, isTablet, isDesktop } = useResponsive();
 
-  return (
-    <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-700 ${scrolled ? "bg-[#0A0B0D]/98 backdrop-blur-2xl border-b border-[#2B3139] shadow-2xl" : "bg-transparent"}`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-14 sm:h-16">
-          <div className="flex items-center space-x-4 sm:space-x-8 lg:space-x-12">
-            <div className="flex items-center space-x-2 cursor-pointer group">
-              <div className="relative">
-                <div className="absolute inset-0 bg-[#F0B90B] rounded-lg blur-xl opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="relative w-7 h-7 sm:w-8 sm:h-8 bg-linear-to-br from-[#F0B90B] to-[#F0B90B]/80 rounded-lg flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-[#0A0B0D] font-bold text-xs sm:text-sm">
-                    C
-                  </span>
-                </div>
-              </div>
-              {!isMobile && (
-                <span className="text-white font-bold text-lg sm:text-xl tracking-tight bg-linear-to-r from-white to-[#A0A5AA] bg-clip-text">
-                  CryptHub
-                </span>
-              )}
-            </div>
+  // Prevent body scroll when menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isMenuOpen]);
 
-            <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
-              {["Buy Crypto", "Markets", "Trade", "Futures", "Gift Cards"].map(
-                (item) => (
+  const menuItems = [
+    { name: "Buy Crypto", icon: TrendingUp, href: "#" },
+    { name: "Markets", icon: BarChart3, href: "#" },
+    { name: "Trade", icon: ArrowRight, href: "#" },
+    { name: "Futures", icon: Zap, href: "#" },
+    { name: "Gift Cards", icon: Gift, href: "#" },
+  ];
+
+  return (
+    <>
+      <nav
+        className={`fixed top-0 w-full z-50 transition-all duration-700 ${
+          scrolled
+            ? "bg-[#0A0B0D]/98 backdrop-blur-2xl border-b border-[#2B3139] shadow-2xl"
+            : "bg-transparent"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center space-x-4 sm:space-x-8 lg:space-x-12">
+              <Link to="/" className="flex items-center space-x-2 cursor-pointer group">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-[#F0B90B] rounded-lg blur-xl opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative w-7 h-7 sm:w-8 sm:h-8 bg-linear-to-br from-[#F0B90B] to-[#F0B90B]/80 rounded-lg flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-[#0A0B0D] font-bold text-xs sm:text-sm">
+                      C
+                    </span>
+                  </div>
+                </div>
+                {!isMobile && (
+                  <span className="text-white font-bold text-lg sm:text-xl tracking-tight bg-linear-to-r from-white to-[#A0A5AA] bg-clip-text">
+                    CryptHub
+                  </span>
+                )}
+              </Link>
+
+              <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
+                {menuItems.map((item) => (
                   <a
-                    key={item}
-                    href="#"
+                    key={item.name}
+                    href={item.href}
                     className="group relative text-[#A0A5AA] hover:text-white transition-colors duration-300 text-sm font-medium"
                   >
-                    {item}
+                    {item.name}
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-linear-to-r from-[#F0B90B] to-[#F0B90B]/50 transition-all duration-300 group-hover:w-full"></span>
                   </a>
-                ),
-              )}
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
-            <Link to="/login">
-              <button className="px-3 sm:px-4 py-1.5 sm:py-2 text-[#F0B90B] border border-[#F0B90B] rounded-xl text-xs sm:text-sm font-semibold hover:bg-[#F0B90B]/10 transition-all duration-300">
-                Log In
-              </button>
-            </Link>
-
-            <Link to="/signup">
-              <button className="px-3 sm:px-4 py-1.5 sm:py-2 bg-linear-to-r from-[#F0B90B] to-[#F0B90B]/90 text-[#0A0B0D] rounded-xl text-xs sm:text-sm font-semibold hover:shadow-lg hover:shadow-[#F0B90B]/25 transition-all duration-300 transform hover:scale-105">
-                Sign Up
-              </button>
-            </Link>
-          </div>
-
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-white p-2"
-          >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-
-        {isMenuOpen && (
-          <div className="md:hidden py-4 sm:py-6 border-t border-[#2B3139] animate-fade-in-up">
-            <div className="flex flex-col space-y-3 sm:space-y-4">
-              {["Buy Crypto", "Markets", "Trade", "Futures", "Gift Cards"].map(
-                (item) => (
-                  <a
-                    key={item}
-                    href="#"
-                    className="text-[#A0A5AA] hover:text-white transition-colors py-2 text-base sm:text-lg"
-                  >
-                    {item}
-                  </a>
-                ),
-              )}
-              <div className="pt-4 sm:pt-6 flex space-x-3 sm:space-x-4">
-                <button className="flex-1 px-4 py-2 text-[#F0B90B] border border-[#F0B90B] rounded-xl text-sm font-semibold">
+            <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
+              <Link to="/login">
+                <button className="px-3 sm:px-4 py-1.5 sm:py-2 text-[#F0B90B] border border-[#F0B90B] rounded-xl text-xs sm:text-sm font-semibold hover:bg-[#F0B90B]/10 transition-all duration-300">
                   Log In
                 </button>
-                <button className="flex-1 px-4 py-2 bg-[#F0B90B] text-[#0A0B0D] rounded-xl text-sm font-semibold">
+              </Link>
+              <Link to="/signup">
+                <button className="px-3 sm:px-4 py-1.5 sm:py-2 bg-linear-to-r from-[#F0B90B] to-[#F0B90B]/90 text-[#0A0B0D] rounded-xl text-xs sm:text-sm font-semibold hover:shadow-lg hover:shadow-[#F0B90B]/25 transition-all duration-300 transform hover:scale-105">
                   Sign Up
                 </button>
+              </Link>
+            </div>
+
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden text-white p-2 relative z-50"
+              aria-label="Toggle menu"
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          {/* Backdrop with blur and gradient */}
+          <div 
+            className="absolute inset-0 bg-linear-to-br from-[#0A0B0D]/98 via-[#0A0B0D]/95 to-[#0A0B0D]/98 backdrop-blur-xl animate-fade-in"
+            onClick={() => setIsMenuOpen(false)}
+          />
+          
+          {/* Animated Menu Panel */}
+          <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-linear-to-b from-[#1A1D24] to-[#0A0B0D] shadow-2xl animate-slide-in-right">
+            {/* Decorative linear header */}
+            <div className="absolute top-0 left-0 right-0 h-40 bg-linear-to-b from-[#F0B90B]/15 via-[#F0B90B]/5 to-transparent pointer-events-none" />
+            
+            {/* Decorative circles */}
+            <div className="absolute top-20 -right-10 w-40 h-40 bg-[#F0B90B]/5 rounded-full blur-3xl" />
+            <div className="absolute bottom-20 -left-10 w-40 h-40 bg-[#F0B90B]/5 rounded-full blur-3xl" />
+            
+            {/* Menu Header */}
+            <div className="relative pt-20 pb-6 px-6 border-b border-[#2B3139]/50">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-[#F0B90B] rounded-full blur-lg opacity-50 animate-pulse"></div>
+                  <div className="relative w-12 h-12 bg-linear-to-br from-[#F0B90B] to-[#F0B90B]/80 rounded-full flex items-center justify-center">
+                    <span className="text-[#0A0B0D] font-bold text-lg">C</span>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-lg">CryptHub</h3>
+                  <p className="text-[#A0A5AA] text-xs">Trade. Earn. Grow.</p>
+                </div>
+              </div>
+              
+              {/* Welcome message */}
+              <div className="mt-4 p-3 bg-[#F0B90B]/5 rounded-xl border border-[#F0B90B]/10">
+                <p className="text-[#A0A5AA] text-xs">
+                  Welcome to CryptHub! 🚀 Start your crypto journey today.
+                </p>
+              </div>
+            </div>
+
+            {/* Navigation Links */}
+            <div className="flex-1 py-6 px-6 overflow-y-auto max-h-[calc(100vh-280px)]">
+              <div className="space-y-1">
+                {menuItems.map((item, idx) => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center justify-between px-4 py-3 text-[#A0A5AA] hover:text-white hover:bg-[#2B3139]/50 rounded-xl transition-all duration-300 group animate-slide-in"
+                    style={{ animationDelay: `${idx * 50}ms` }}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon size={18} className="text-[#F0B90B]" />
+                      <span className="font-medium">{item.name}</span>
+                    </div>
+                    <ChevronRight 
+                      size={16} 
+                      className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" 
+                    />
+                  </a>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div className="my-6 h-px bg-linear-to-r from-transparent via-[#2B3139] to-transparent" />
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 gap-3 mb-6 animate-slide-in animation-delay-300">
+                <div className="p-3 bg-[#1E2329]/50 rounded-xl border border-[#2B3139]">
+                  <p className="text-[#A0A5AA] text-[10px] mb-1">24h Volume</p>
+                  <p className="text-white font-bold text-sm">$24.5B</p>
+                </div>
+                <div className="p-3 bg-[#1E2329]/50 rounded-xl border border-[#2B3139]">
+                  <p className="text-[#A0A5AA] text-[10px] mb-1">Active Users</p>
+                  <p className="text-white font-bold text-sm">2M+</p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3 animate-slide-in animation-delay-400">
+                <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                  <button className="w-full px-4 py-3 text-[#F0B90B] border border-[#F0B90B] rounded-xl font-semibold hover:bg-[#F0B90B]/10 transition-all duration-300">
+                    Log In
+                  </button>
+                </Link>
+                <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
+                  <button className="w-full px-4 py-3 mt-4 bg-linear-to-r from-[#F0B90B] to-[#F0B90B]/90 text-[#0A0B0D] rounded-xl font-semibold hover:shadow-lg hover:shadow-[#F0B90B]/25 transition-all duration-300 transform hover:scale-[1.02]">
+                    Sign Up
+                  </button>
+                </Link>
+              </div>
+
+              {/* Trust Badge */}
+              <div className="mt-6 p-4 bg-[#1E2329]/30 rounded-xl border border-[#2B3139] backdrop-blur-sm">
+                <div className="flex items-center justify-center gap-2">
+                  <Shield size={14} className="text-[#0ECB81]" />
+                  <p className="text-[#A0A5AA] text-xs">Secure & Regulated Platform</p>
+                </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
-    </nav>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -752,6 +851,35 @@ const HeroPage = () => {
           }
         }
         
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+          }
+          to {
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
         .animate-fade-in-up {
           animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
           opacity: 0;
@@ -761,7 +889,21 @@ const HeroPage = () => {
           animation: pulse-slow 8s ease-in-out infinite;
         }
         
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        .animate-slide-in-right {
+          animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        .animate-slide-in {
+          opacity: 0;
+          animation: slideIn 0.4s ease-out forwards;
+        }
+        
         .animation-delay-200 { animation-delay: 0.2s; }
+        .animation-delay-300 { animation-delay: 0.3s; }
         .animation-delay-400 { animation-delay: 0.4s; }
         .animation-delay-600 { animation-delay: 0.6s; }
         .animation-delay-800 { animation-delay: 0.8s; }
@@ -775,6 +917,10 @@ const HeroPage = () => {
           
           .group:hover .group-hover\\:scale-110 {
             transform: scale(1);
+          }
+          
+          button, a, [role="button"] {
+            min-height: 44px;
           }
         }
         
@@ -800,13 +946,6 @@ const HeroPage = () => {
         * {
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
-        }
-        
-        /* Better touch targets on mobile */
-        @media (max-width: 768px) {
-          button, a, [role="button"] {
-            min-height: 44px;
-          }
         }
       `}</style>
     </div>

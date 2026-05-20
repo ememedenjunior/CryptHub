@@ -8,6 +8,7 @@ import {
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import HeroPage from "./pages/Heropage";
+import UI from "./pages/UI";
 
 const App = () => {
   return (
@@ -16,6 +17,7 @@ const App = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/" element={<HeroPage />} />
+        <Route path="/home" element={<UI />} />
       </Routes>
     </Router>
   );

@@ -1,23 +1,48 @@
 // App.js - Updated with routing
-import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import HeroPage from "./pages/Heropage";
 import UI from "./pages/UI";
+import ProtectedRoute from "./components/Protect";
+import UnProtectedRoute from "./components/NotProtect";
 
 const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/" element={<HeroPage />} />
-        <Route path="/home" element={<UI />} />
+        <Route
+          path="/login"
+          element={
+            <UnProtectedRoute>
+              <LoginPage />
+            </UnProtectedRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <UnProtectedRoute>
+              <SignUpPage />
+            </UnProtectedRoute>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <UnProtectedRoute>
+              <HeroPage />
+            </UnProtectedRoute>
+          }
+        />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <UI />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );

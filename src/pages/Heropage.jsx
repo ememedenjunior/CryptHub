@@ -751,7 +751,7 @@ const HeroPage = () => {
             <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#F0B90B]/10 border border-[#F0B90B]/20 backdrop-blur-sm animate-fade-in-up">
               <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#0ECB81] rounded-full mr-1.5 sm:mr-2 animate-pulse"></div>
               <span className="text-[#F0B90B] text-[10px] sm:text-xs font-medium">
-                {isMobile ? "✨ Active Traders" : "✨ 1,234,567 Active Traders"}
+                {isMobile ? "Active Traders" : "Active Traders"}
               </span>
             </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Home,
   TrendingUp,
@@ -22,8 +22,10 @@ import {
   Minus,
   Plus,
   ChevronRight,
-  Copy
+  Copy,
 } from "lucide-react";
+import useMe from "../hooks/useMe";
+import LoadingSpinner from "../components/Spinner";
 
 // ============================================================
 // CONSTANTS & DATA
@@ -68,7 +70,6 @@ const GIFT_CARDS = [
 // COMPONENTS
 // ============================================================
 
-// Home Screen Component - Institutional Grade with Smaller Fonts
 const HomeScreen = () => {
   const [showBalance, setShowBalance] = useState(true);
   const [selectedMarketTab, setSelectedMarketTab] = useState("altcoins");
@@ -1734,72 +1735,214 @@ const HomeScreen = () => {
 
 // Exchange Screen Component - Professional Trading Terminal
 const ExchangeScreen = () => {
-  const [tradeType, setTradeType] = useState('spot');
-  const [orderType, setOrderType] = useState('limit');
-  const [side, setSide] = useState('buy');
-  const [selectedPair, setSelectedPair] = useState('BTC/USDT');
-  const [price, setPrice] = useState('');
-  const [amount, setAmount] = useState('');
-  const [total, setTotal] = useState('');
+  const [tradeType, setTradeType] = useState("spot");
+  const [orderType, setOrderType] = useState("limit");
+  const [side, setSide] = useState("buy");
+  const [selectedPair, setSelectedPair] = useState("BTC/USDT");
+  const [price, setPrice] = useState("");
+  const [amount, setAmount] = useState("");
+  const [total, setTotal] = useState("");
   const [leverage, setLeverage] = useState(1);
-  const [activeBottomTab, setActiveBottomTab] = useState('orders');
+  const [activeBottomTab, setActiveBottomTab] = useState("orders");
   const [showTokenSelector, setShowTokenSelector] = useState(false);
   const [orderSubmitted, setOrderSubmitted] = useState(false);
   const [notification, setNotification] = useState(null);
   const [showChart, setShowChart] = useState(true);
-  
+
   // Trading pairs data
   const tradingPairs = [
-    { symbol: 'BTC/USDT', name: 'Bitcoin', price: 43521.20, change: 2.4, positive: true, volume: '24.5B', high: 44200, low: 42500, icon: '₿', color: '#F7931A' },
-    { symbol: 'ETH/USDT', name: 'Ethereum', price: 2345.67, change: 1.8, positive: true, volume: '12.3B', high: 2380, low: 2300, icon: 'Ξ', color: '#627EEA' },
-    { symbol: 'BNB/USDT', name: 'BNB', price: 315.42, change: 0.5, positive: true, volume: '1.2B', high: 318.5, low: 312, icon: 'B', color: '#F3BA2F' },
-    { symbol: 'SOL/USDT', name: 'Solana', price: 98.45, change: 5.2, positive: true, volume: '3.1B', high: 100.5, low: 95.2, icon: '◎', color: '#00FFA3' },
-    { symbol: 'XRP/USDT', name: 'Ripple', price: 0.52, change: -1.2, positive: false, volume: '890M', high: 0.53, low: 0.51, icon: 'X', color: '#23292F' },
-    { symbol: 'DOGE/USDT', name: 'Dogecoin', price: 0.082, change: 15.7, positive: true, volume: '850M', high: 0.085, low: 0.078, icon: '🐕', color: '#C3A634' }
+    {
+      symbol: "BTC/USDT",
+      name: "Bitcoin",
+      price: 43521.2,
+      change: 2.4,
+      positive: true,
+      volume: "24.5B",
+      high: 44200,
+      low: 42500,
+      icon: "₿",
+      color: "#F7931A",
+    },
+    {
+      symbol: "ETH/USDT",
+      name: "Ethereum",
+      price: 2345.67,
+      change: 1.8,
+      positive: true,
+      volume: "12.3B",
+      high: 2380,
+      low: 2300,
+      icon: "Ξ",
+      color: "#627EEA",
+    },
+    {
+      symbol: "BNB/USDT",
+      name: "BNB",
+      price: 315.42,
+      change: 0.5,
+      positive: true,
+      volume: "1.2B",
+      high: 318.5,
+      low: 312,
+      icon: "B",
+      color: "#F3BA2F",
+    },
+    {
+      symbol: "SOL/USDT",
+      name: "Solana",
+      price: 98.45,
+      change: 5.2,
+      positive: true,
+      volume: "3.1B",
+      high: 100.5,
+      low: 95.2,
+      icon: "◎",
+      color: "#00FFA3",
+    },
+    {
+      symbol: "XRP/USDT",
+      name: "Ripple",
+      price: 0.52,
+      change: -1.2,
+      positive: false,
+      volume: "890M",
+      high: 0.53,
+      low: 0.51,
+      icon: "X",
+      color: "#23292F",
+    },
+    {
+      symbol: "DOGE/USDT",
+      name: "Dogecoin",
+      price: 0.082,
+      change: 15.7,
+      positive: true,
+      volume: "850M",
+      high: 0.085,
+      low: 0.078,
+      icon: "🐕",
+      color: "#C3A634",
+    },
   ];
 
   // Enhanced Order Book Data with better bid/ask distinction
   const orderBook = {
     asks: [
-      [43522.00, 1.5, 98.2],
-      [43523.50, 2.1, 96.7],
-      [43525.00, 3.4, 94.6],
-      [43527.00, 1.9, 91.2],
-      [43530.00, 2.8, 89.3],
-      [43532.50, 1.2, 86.5],
-      [43535.00, 2.5, 85.3]
+      [43522.0, 1.5, 98.2],
+      [43523.5, 2.1, 96.7],
+      [43525.0, 3.4, 94.6],
+      [43527.0, 1.9, 91.2],
+      [43530.0, 2.8, 89.3],
+      [43532.5, 1.2, 86.5],
+      [43535.0, 2.5, 85.3],
     ],
     bids: [
-      [43520.50, 2.3, 100.0],
-      [43519.80, 1.8, 98.5],
-      [43518.20, 3.1, 96.7],
-      [43517.50, 2.5, 93.6],
-      [43516.00, 4.2, 91.1],
-      [43515.30, 1.9, 86.9],
-      [43514.20, 2.7, 85.0]
-    ]
+      [43520.5, 2.3, 100.0],
+      [43519.8, 1.8, 98.5],
+      [43518.2, 3.1, 96.7],
+      [43517.5, 2.5, 93.6],
+      [43516.0, 4.2, 91.1],
+      [43515.3, 1.9, 86.9],
+      [43514.2, 2.7, 85.0],
+    ],
   };
 
   // Sample Orders
   const openOrders = [
-    { id: 1, pair: 'BTC/USDT', side: 'buy', price: 43200, amount: 0.05, filled: 0.02, total: 2160, time: '12:30', status: 'open', type: 'limit' },
-    { id: 2, pair: 'ETH/USDT', side: 'sell', price: 2400, amount: 0.5, filled: 0, total: 1200, time: '12:15', status: 'open', type: 'limit' }
+    {
+      id: 1,
+      pair: "BTC/USDT",
+      side: "buy",
+      price: 43200,
+      amount: 0.05,
+      filled: 0.02,
+      total: 2160,
+      time: "12:30",
+      status: "open",
+      type: "limit",
+    },
+    {
+      id: 2,
+      pair: "ETH/USDT",
+      side: "sell",
+      price: 2400,
+      amount: 0.5,
+      filled: 0,
+      total: 1200,
+      time: "12:15",
+      status: "open",
+      type: "limit",
+    },
   ];
 
   // Sample Positions
   const openPositions = [
-    { id: 1, pair: 'BTC/USDT', side: 'long', entryPrice: 43200, markPrice: 43521, amount: 0.1, value: 4320, pnl: 32.10, pnlPercent: 0.74, liquidation: 41500, leverage: 10 },
-    { id: 2, pair: 'ETH/USDT', side: 'short', entryPrice: 2380, markPrice: 2345, amount: 1.5, value: 3570, pnl: 52.50, pnlPercent: 1.47, liquidation: 2450, leverage: 5 }
+    {
+      id: 1,
+      pair: "BTC/USDT",
+      side: "long",
+      entryPrice: 43200,
+      markPrice: 43521,
+      amount: 0.1,
+      value: 4320,
+      pnl: 32.1,
+      pnlPercent: 0.74,
+      liquidation: 41500,
+      leverage: 10,
+    },
+    {
+      id: 2,
+      pair: "ETH/USDT",
+      side: "short",
+      entryPrice: 2380,
+      markPrice: 2345,
+      amount: 1.5,
+      value: 3570,
+      pnl: 52.5,
+      pnlPercent: 1.47,
+      liquidation: 2450,
+      leverage: 5,
+    },
   ];
 
   // Trade History
   const tradeHistory = [
-    { id: 1, pair: 'BTC/USDT', side: 'buy', price: 43100, amount: 0.1, total: 4310, time: '11:25:30', fee: 4.31, type: 'limit' },
-    { id: 2, pair: 'ETH/USDT', side: 'sell', price: 2350, amount: 0.8, total: 1880, time: '10:15:22', fee: 1.88, type: 'market' },
-    { id: 3, pair: 'SOL/USDT', side: 'buy', price: 97.50, amount: 5, total: 487.5, time: '09:45:10', fee: 0.49, type: 'limit' }
+    {
+      id: 1,
+      pair: "BTC/USDT",
+      side: "buy",
+      price: 43100,
+      amount: 0.1,
+      total: 4310,
+      time: "11:25:30",
+      fee: 4.31,
+      type: "limit",
+    },
+    {
+      id: 2,
+      pair: "ETH/USDT",
+      side: "sell",
+      price: 2350,
+      amount: 0.8,
+      total: 1880,
+      time: "10:15:22",
+      fee: 1.88,
+      type: "market",
+    },
+    {
+      id: 3,
+      pair: "SOL/USDT",
+      side: "buy",
+      price: 97.5,
+      amount: 5,
+      total: 487.5,
+      time: "09:45:10",
+      fee: 0.49,
+      type: "limit",
+    },
   ];
 
-  const currentPair = tradingPairs.find(p => p.symbol === selectedPair);
+  const currentPair = tradingPairs.find((p) => p.symbol === selectedPair);
   const userBalance = 0.42;
 
   const calculateTotal = () => {
@@ -1807,7 +1950,7 @@ const ExchangeScreen = () => {
       const totalValue = parseFloat(price) * parseFloat(amount);
       setTotal(totalValue.toFixed(2));
     } else {
-      setTotal('');
+      setTotal("");
     }
   };
 
@@ -1823,7 +1966,7 @@ const ExchangeScreen = () => {
 
   const handleSetAmount = (percent) => {
     const maxAmount = userBalance;
-    setAmount((maxAmount * percent / 100).toFixed(4));
+    setAmount(((maxAmount * percent) / 100).toFixed(4));
     setTimeout(calculateTotal, 10);
   };
 
@@ -1834,22 +1977,25 @@ const ExchangeScreen = () => {
 
   const handleSubmitOrder = () => {
     if (!amount || parseFloat(amount) === 0) {
-      showNotification('Please enter an amount', 'error');
+      showNotification("Please enter an amount", "error");
       return;
     }
-    
-    if (orderType === 'limit' && (!price || parseFloat(price) === 0)) {
-      showNotification('Please enter a price', 'error');
+
+    if (orderType === "limit" && (!price || parseFloat(price) === 0)) {
+      showNotification("Please enter a price", "error");
       return;
     }
 
     setOrderSubmitted(true);
-    showNotification(`${side.toUpperCase()} order submitted successfully!`, 'success');
-    
+    showNotification(
+      `${side.toUpperCase()} order submitted successfully!`,
+      "success",
+    );
+
     setTimeout(() => {
-      setAmount('');
-      setPrice('');
-      setTotal('');
+      setAmount("");
+      setPrice("");
+      setTotal("");
       setOrderSubmitted(false);
     }, 2000);
   };
@@ -1865,20 +2011,33 @@ const ExchangeScreen = () => {
     <div className="min-h-screen bg-[#0A0B0D]">
       {/* Notification */}
       {notification && (
-        <div className={`fixed top-20 left-4 right-4 z-50 p-3 rounded-xl animate-slide-down ${
-          notification.type === 'success' ? 'bg-[#0ECB81]' : 'bg-[#F6465D]'
-        }`}>
-          <p className="text-white text-xs font-medium text-center">{notification.message}</p>
+        <div
+          className={`fixed top-20 left-4 right-4 z-50 p-3 rounded-xl animate-slide-down ${
+            notification.type === "success" ? "bg-[#0ECB81]" : "bg-[#F6465D]"
+          }`}
+        >
+          <p className="text-white text-xs font-medium text-center">
+            {notification.message}
+          </p>
         </div>
       )}
 
       {/* Token Selector Modal */}
       {showTokenSelector && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setShowTokenSelector(false)}>
-          <div className="bg-[#1E2329] rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowTokenSelector(false)}
+        >
+          <div
+            className="bg-[#1E2329] rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center p-4 border-b border-[#2B3139]">
               <h3 className="text-white font-semibold text-sm">Select Token</h3>
-              <button onClick={() => setShowTokenSelector(false)} className="text-[#A0A5AA]">
+              <button
+                onClick={() => setShowTokenSelector(false)}
+                className="text-[#A0A5AA]"
+              >
                 <X size={16} />
               </button>
             </div>
@@ -1893,19 +2052,31 @@ const ExchangeScreen = () => {
                   className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-[#2B3139] transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm" 
-                         style={{ backgroundColor: `${pair.color}20`, color: pair.color }}>
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                      style={{
+                        backgroundColor: `${pair.color}20`,
+                        color: pair.color,
+                      }}
+                    >
                       {pair.icon}
                     </div>
                     <div className="text-left">
-                      <p className="text-white font-medium text-sm">{pair.symbol}</p>
+                      <p className="text-white font-medium text-sm">
+                        {pair.symbol}
+                      </p>
                       <p className="text-[#A0A5AA] text-[10px]">{pair.name}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-white text-xs">${pair.price.toLocaleString()}</p>
-                    <p className={`text-[10px] ${pair.positive ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
-                      {pair.positive ? '+' : ''}{pair.change}%
+                    <p className="text-white text-xs">
+                      ${pair.price.toLocaleString()}
+                    </p>
+                    <p
+                      className={`text-[10px] ${pair.positive ? "text-[#0ECB81]" : "text-[#F6465D]"}`}
+                    >
+                      {pair.positive ? "+" : ""}
+                      {pair.change}%
                     </p>
                   </div>
                 </button>
@@ -1921,12 +2092,17 @@ const ExchangeScreen = () => {
         <div className="bg-[#1E2329] rounded-xl p-3 mb-3">
           <div className="flex flex-wrap justify-between items-center gap-3">
             {/* Token Selector */}
-            <button 
+            <button
               onClick={() => setShowTokenSelector(true)}
               className="flex items-center gap-2 px-3 py-1.5 bg-[#2B3139] rounded-lg hover:bg-[#363D45] transition-all"
             >
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-sm" 
-                   style={{ backgroundColor: `${currentPair?.color}20`, color: currentPair?.color }}>
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center text-sm"
+                style={{
+                  backgroundColor: `${currentPair?.color}20`,
+                  color: currentPair?.color,
+                }}
+              >
                 {currentPair?.icon}
               </div>
               <div className="text-left">
@@ -1940,17 +2116,25 @@ const ExchangeScreen = () => {
             <div className="flex flex-wrap gap-3">
               <div>
                 <p className="text-[#A0A5AA] text-[9px]">Price</p>
-                <p className="text-white font-semibold text-sm">${currentPair?.price.toLocaleString()}</p>
+                <p className="text-white font-semibold text-sm">
+                  ${currentPair?.price.toLocaleString()}
+                </p>
               </div>
               <div>
                 <p className="text-[#A0A5AA] text-[9px]">24h Change</p>
-                <p className={`font-semibold text-xs ${currentPair?.positive ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
-                  {currentPair?.positive ? '+' : ''}{currentPair?.change}%
+                <p
+                  className={`font-semibold text-xs ${currentPair?.positive ? "text-[#0ECB81]" : "text-[#F6465D]"}`}
+                >
+                  {currentPair?.positive ? "+" : ""}
+                  {currentPair?.change}%
                 </p>
               </div>
               <div>
                 <p className="text-[#A0A5AA] text-[9px]">24h High/Low</p>
-                <p className="text-white text-[10px]">{currentPair?.high.toLocaleString()} / {currentPair?.low.toLocaleString()}</p>
+                <p className="text-white text-[10px]">
+                  {currentPair?.high.toLocaleString()} /{" "}
+                  {currentPair?.low.toLocaleString()}
+                </p>
               </div>
               <div>
                 <p className="text-[#A0A5AA] text-[9px]">24h Volume</p>
@@ -1961,17 +2145,21 @@ const ExchangeScreen = () => {
             {/* Trade Type Tabs */}
             <div className="flex gap-1 bg-[#2B3139] rounded-lg p-0.5">
               <button
-                onClick={() => setTradeType('spot')}
+                onClick={() => setTradeType("spot")}
                 className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                  tradeType === 'spot' ? 'bg-[#F0B90B] text-[#0A0B0D]' : 'text-[#A0A5AA]'
+                  tradeType === "spot"
+                    ? "bg-[#F0B90B] text-[#0A0B0D]"
+                    : "text-[#A0A5AA]"
                 }`}
               >
                 Spot
               </button>
               <button
-                onClick={() => setTradeType('futures')}
+                onClick={() => setTradeType("futures")}
                 className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                  tradeType === 'futures' ? 'bg-[#F0B90B] text-[#0A0B0D]' : 'text-[#A0A5AA]'
+                  tradeType === "futures"
+                    ? "bg-[#F0B90B] text-[#0A0B0D]"
+                    : "text-[#A0A5AA]"
                 }`}
               >
                 Futures
@@ -1986,19 +2174,34 @@ const ExchangeScreen = () => {
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-white font-semibold text-xs">Chart</h3>
               <div className="flex gap-1">
-                {['1m', '5m', '15m', '1h', '4h', '1d'].map((tf) => (
-                  <button key={tf} className="px-1.5 py-0.5 text-[#A0A5AA] text-[9px] hover:text-white transition-colors">
+                {["1m", "5m", "15m", "1h", "4h", "1d"].map((tf) => (
+                  <button
+                    key={tf}
+                    className="px-1.5 py-0.5 text-[#A0A5AA] text-[9px] hover:text-white transition-colors"
+                  >
                     {tf}
                   </button>
                 ))}
-                <button onClick={() => setShowChart(false)} className="ml-2 text-[#A0A5AA] text-[9px]">✕</button>
+                <button
+                  onClick={() => setShowChart(false)}
+                  className="ml-2 text-[#A0A5AA] text-[9px]"
+                >
+                  ✕
+                </button>
               </div>
             </div>
             <div className="h-48 bg-[#0A0B0D] rounded-lg flex items-center justify-center">
               <div className="text-center">
-                <LineChart size={32} className="text-[#F0B90B] mx-auto mb-1 opacity-50" />
-                <p className="text-[#A0A5AA] text-[10px]">Advanced Trading Chart</p>
-                <p className="text-[#A0A5AA] text-[9px]">{selectedPair} - Real-time candlestick chart</p>
+                <LineChart
+                  size={32}
+                  className="text-[#F0B90B] mx-auto mb-1 opacity-50"
+                />
+                <p className="text-[#A0A5AA] text-[10px]">
+                  Advanced Trading Chart
+                </p>
+                <p className="text-[#A0A5AA] text-[9px]">
+                  {selectedPair} - Real-time candlestick chart
+                </p>
               </div>
             </div>
           </div>
@@ -2010,12 +2213,14 @@ const ExchangeScreen = () => {
           <div className="bg-[#1E2329] rounded-xl p-3">
             {/* Order Type Tabs */}
             <div className="flex gap-1 mb-3 bg-[#2B3139] rounded-lg p-0.5">
-              {['limit', 'market'].map((type) => (
+              {["limit", "market"].map((type) => (
                 <button
                   key={type}
                   onClick={() => setOrderType(type)}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    orderType === type ? 'bg-[#F0B90B] text-[#0A0B0D]' : 'text-[#A0A5AA]'
+                    orderType === type
+                      ? "bg-[#F0B90B] text-[#0A0B0D]"
+                      : "text-[#A0A5AA]"
                   }`}
                 >
                   {type.toUpperCase()}
@@ -2024,19 +2229,21 @@ const ExchangeScreen = () => {
             </div>
 
             {/* Leverage for Futures */}
-            {tradeType === 'futures' && (
+            {tradeType === "futures" && (
               <div className="mb-3 p-2 bg-[#0A0B0D] rounded-lg">
                 <div className="flex justify-between items-center mb-1">
                   <p className="text-[#A0A5AA] text-[10px]">Leverage</p>
                   <div className="flex items-center gap-2">
-                    <button 
+                    <button
                       onClick={() => setLeverage(Math.max(1, leverage - 1))}
                       className="p-0.5 bg-[#2B3139] rounded"
                     >
                       <Minus size={10} />
                     </button>
-                    <p className="text-[#F0B90B] font-semibold text-xs">{leverage}x</p>
-                    <button 
+                    <p className="text-[#F0B90B] font-semibold text-xs">
+                      {leverage}x
+                    </p>
+                    <button
                       onClick={() => setLeverage(Math.min(50, leverage + 1))}
                       className="p-0.5 bg-[#2B3139] rounded"
                     >
@@ -2051,14 +2258,14 @@ const ExchangeScreen = () => {
                   value={leverage}
                   onChange={(e) => setLeverage(parseInt(e.target.value))}
                   className="w-full h-1 bg-[#2B3139] rounded-lg appearance-none cursor-pointer"
-                  style={{ accentColor: '#F0B90B' }}
+                  style={{ accentColor: "#F0B90B" }}
                 />
                 <div className="flex justify-between mt-1">
                   {[1, 5, 10, 20, 50].map((lev) => (
                     <button
                       key={lev}
                       onClick={() => setLeverage(lev)}
-                      className={`text-[9px] px-1.5 py-0.5 rounded ${leverage === lev ? 'bg-[#F0B90B] text-[#0A0B0D]' : 'text-[#A0A5AA]'}`}
+                      className={`text-[9px] px-1.5 py-0.5 rounded ${leverage === lev ? "bg-[#F0B90B] text-[#0A0B0D]" : "text-[#A0A5AA]"}`}
                     >
                       {lev}x
                     </button>
@@ -2070,17 +2277,21 @@ const ExchangeScreen = () => {
             {/* Buy/Sell Buttons */}
             <div className="flex gap-2 mb-3">
               <button
-                onClick={() => setSide('buy')}
+                onClick={() => setSide("buy")}
                 className={`flex-1 py-2 rounded-lg font-semibold text-xs transition-all ${
-                  side === 'buy' ? 'bg-[#0ECB81] text-white' : 'bg-[#2B3139] text-[#A0A5AA]'
+                  side === "buy"
+                    ? "bg-[#0ECB81] text-white"
+                    : "bg-[#2B3139] text-[#A0A5AA]"
                 }`}
               >
                 BUY
               </button>
               <button
-                onClick={() => setSide('sell')}
+                onClick={() => setSide("sell")}
                 className={`flex-1 py-2 rounded-lg font-semibold text-xs transition-all ${
-                  side === 'sell' ? 'bg-[#F6465D] text-white' : 'bg-[#2B3139] text-[#A0A5AA]'
+                  side === "sell"
+                    ? "bg-[#F6465D] text-white"
+                    : "bg-[#2B3139] text-[#A0A5AA]"
                 }`}
               >
                 SELL
@@ -2088,10 +2299,12 @@ const ExchangeScreen = () => {
             </div>
 
             {/* Price Input */}
-            {orderType === 'limit' && (
+            {orderType === "limit" && (
               <div className="mb-3">
                 <div className="flex justify-between mb-1">
-                  <label className="text-[#A0A5AA] text-[10px]">Price (USDT)</label>
+                  <label className="text-[#A0A5AA] text-[10px]">
+                    Price (USDT)
+                  </label>
                   <div className="flex gap-1">
                     {[43100, 43300, 43500, 43700].map((p) => (
                       <button
@@ -2117,8 +2330,12 @@ const ExchangeScreen = () => {
             {/* Amount Input */}
             <div className="mb-3">
               <div className="flex justify-between mb-1">
-                <label className="text-[#A0A5AA] text-[10px]">Amount ({selectedPair.split('/')[0]})</label>
-                <span className="text-[#A0A5AA] text-[9px]">Balance: {userBalance}</span>
+                <label className="text-[#A0A5AA] text-[10px]">
+                  Amount ({selectedPair.split("/")[0]})
+                </label>
+                <span className="text-[#A0A5AA] text-[9px]">
+                  Balance: {userBalance}
+                </span>
               </div>
               <input
                 type="number"
@@ -2145,7 +2362,7 @@ const ExchangeScreen = () => {
               <div className="flex justify-between">
                 <span className="text-[#A0A5AA] text-[10px]">Total</span>
                 <span className="text-white font-semibold text-xs">
-                  {total ? `${parseFloat(total).toFixed(2)}` : '0.00'} USDT
+                  {total ? `${parseFloat(total).toFixed(2)}` : "0.00"} USDT
                 </span>
               </div>
             </div>
@@ -2155,19 +2372,25 @@ const ExchangeScreen = () => {
               onClick={handleSubmitOrder}
               disabled={orderSubmitted}
               className={`w-full py-2 rounded-lg font-semibold text-xs transition-all transform active:scale-95 ${
-                side === 'buy' 
-                  ? 'bg-linear-to-r from-[#0ECB81] to-[#0ECB81]/80 text-white' 
-                  : 'bg-linear-to-r from-[#F6465D] to-[#F6465D]/80 text-white'
-              } ${orderSubmitted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                side === "buy"
+                  ? "bg-linear-to-r from-[#0ECB81] to-[#0ECB81]/80 text-white"
+                  : "bg-linear-to-r from-[#F6465D] to-[#F6465D]/80 text-white"
+              } ${orderSubmitted ? "opacity-50 cursor-not-allowed" : ""}`}
             >
-              {orderSubmitted ? 'Order Submitted ✓' : (side === 'buy' ? `BUY ${selectedPair.split('/')[0]}` : `SELL ${selectedPair.split('/')[0]}`)}
+              {orderSubmitted
+                ? "Order Submitted ✓"
+                : side === "buy"
+                  ? `BUY ${selectedPair.split("/")[0]}`
+                  : `SELL ${selectedPair.split("/")[0]}`}
             </button>
           </div>
 
           {/* Right Side - Order Book */}
           <div className="bg-[#1E2329] rounded-xl p-3">
-            <h3 className="text-white font-semibold text-xs mb-2">Order Book</h3>
-            
+            <h3 className="text-white font-semibold text-xs mb-2">
+              Order Book
+            </h3>
+
             {/* Asks (Sell Orders) - Top */}
             <div className="mb-2">
               <div className="grid grid-cols-3 text-[#A0A5AA] text-[9px] mb-1 pb-1 border-b border-[#2B3139]">
@@ -2177,14 +2400,20 @@ const ExchangeScreen = () => {
               </div>
               <div className="space-y-0.5">
                 {orderBook.asks.map((ask, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     onClick={() => handleSetPriceFromOrderBook(ask[0])}
                     className="grid grid-cols-3 text-xs cursor-pointer hover:bg-[#2B3139] p-1 rounded transition-all"
                   >
-                    <span className="text-[#F6465D] font-mono text-[11px]">{ask[0].toFixed(2)}</span>
-                    <span className="text-white text-center text-[11px]">{ask[1].toFixed(2)}</span>
-                    <span className="text-[#A0A5AA] text-right text-[11px]">{ask[2].toFixed(1)}</span>
+                    <span className="text-[#F6465D] font-mono text-[11px]">
+                      {ask[0].toFixed(2)}
+                    </span>
+                    <span className="text-white text-center text-[11px]">
+                      {ask[1].toFixed(2)}
+                    </span>
+                    <span className="text-[#A0A5AA] text-right text-[11px]">
+                      {ask[2].toFixed(1)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -2192,9 +2421,14 @@ const ExchangeScreen = () => {
 
             {/* Current Price Indicator */}
             <div className="py-1.5 my-1.5 text-center border-y border-[#2B3139]">
-              <p className="text-white font-bold text-sm">${currentPair?.price.toLocaleString()}</p>
-              <p className={`text-[10px] ${currentPair?.positive ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
-                {currentPair?.positive ? '▲' : '▼'} {Math.abs(currentPair?.change)}%
+              <p className="text-white font-bold text-sm">
+                ${currentPair?.price.toLocaleString()}
+              </p>
+              <p
+                className={`text-[10px] ${currentPair?.positive ? "text-[#0ECB81]" : "text-[#F6465D]"}`}
+              >
+                {currentPair?.positive ? "▲" : "▼"}{" "}
+                {Math.abs(currentPair?.change)}%
               </p>
             </div>
 
@@ -2207,14 +2441,20 @@ const ExchangeScreen = () => {
               </div>
               <div className="space-y-0.5">
                 {orderBook.bids.map((bid, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     onClick={() => handleSetPriceFromOrderBook(bid[0])}
                     className="grid grid-cols-3 text-xs cursor-pointer hover:bg-[#2B3139] p-1 rounded transition-all"
                   >
-                    <span className="text-[#0ECB81] font-mono text-[11px]">{bid[0].toFixed(2)}</span>
-                    <span className="text-white text-center text-[11px]">{bid[1].toFixed(2)}</span>
-                    <span className="text-[#A0A5AA] text-right text-[11px]">{bid[2].toFixed(1)}</span>
+                    <span className="text-[#0ECB81] font-mono text-[11px]">
+                      {bid[0].toFixed(2)}
+                    </span>
+                    <span className="text-white text-center text-[11px]">
+                      {bid[1].toFixed(2)}
+                    </span>
+                    <span className="text-[#A0A5AA] text-right text-[11px]">
+                      {bid[2].toFixed(1)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -2226,9 +2466,24 @@ const ExchangeScreen = () => {
         <div className="bg-[#1E2329] rounded-xl overflow-hidden mb-20">
           <div className="flex border-b border-[#2B3139]">
             {[
-              { id: 'orders', label: 'Open Orders', icon: ClipboardList, count: openOrders.length },
-              { id: 'positions', label: 'Positions', icon: BookOpen, count: openPositions.length },
-              { id: 'history', label: 'Trade History', icon: History, count: tradeHistory.length }
+              {
+                id: "orders",
+                label: "Open Orders",
+                icon: ClipboardList,
+                count: openOrders.length,
+              },
+              {
+                id: "positions",
+                label: "Positions",
+                icon: BookOpen,
+                count: openPositions.length,
+              },
+              {
+                id: "history",
+                label: "Trade History",
+                icon: History,
+                count: tradeHistory.length,
+              },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeBottomTab === tab.id;
@@ -2237,13 +2492,17 @@ const ExchangeScreen = () => {
                   key={tab.id}
                   onClick={() => setActiveBottomTab(tab.id)}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-all ${
-                    isActive ? 'text-[#F0B90B] border-b-2 border-[#F0B90B]' : 'text-[#A0A5AA] hover:text-white'
+                    isActive
+                      ? "text-[#F0B90B] border-b-2 border-[#F0B90B]"
+                      : "text-[#A0A5AA] hover:text-white"
                   }`}
                 >
                   <Icon size={12} />
                   {tab.label}
                   {tab.count > 0 && (
-                    <span className={`px-1 py-0.5 rounded-full text-[9px] ${isActive ? 'bg-[#F0B90B]/20' : 'bg-[#2B3139]'}`}>
+                    <span
+                      className={`px-1 py-0.5 rounded-full text-[9px] ${isActive ? "bg-[#F0B90B]/20" : "bg-[#2B3139]"}`}
+                    >
                       {tab.count}
                     </span>
                   )}
@@ -2254,8 +2513,8 @@ const ExchangeScreen = () => {
 
           <div className="p-2 max-h-64 overflow-y-auto">
             {/* Open Orders */}
-            {activeBottomTab === 'orders' && (
-              openOrders.length > 0 ? (
+            {activeBottomTab === "orders" &&
+              (openOrders.length > 0 ? (
                 <div className="space-y-1.5">
                   <div className="grid grid-cols-6 gap-1 text-[#A0A5AA] text-[9px] pb-1 border-b border-[#2B3139]">
                     <span>Pair</span>
@@ -2266,15 +2525,28 @@ const ExchangeScreen = () => {
                     <span>Action</span>
                   </div>
                   {openOrders.map((order) => (
-                    <div key={order.id} className="grid grid-cols-6 gap-1 text-[10px] py-1 hover:bg-[#2B3139] rounded transition-all">
+                    <div
+                      key={order.id}
+                      className="grid grid-cols-6 gap-1 text-[10px] py-1 hover:bg-[#2B3139] rounded transition-all"
+                    >
                       <span className="text-white">{order.pair}</span>
-                      <span className={order.side === 'buy' ? 'text-[#0ECB81]' : 'text-[#F6465D]'}>
+                      <span
+                        className={
+                          order.side === "buy"
+                            ? "text-[#0ECB81]"
+                            : "text-[#F6465D]"
+                        }
+                      >
                         {order.side.toUpperCase()}
                       </span>
                       <span className="text-white">${order.price}</span>
                       <span className="text-white">{order.amount}</span>
-                      <span className="text-[#A0A5AA]">{order.filled}/{order.amount}</span>
-                      <button className="text-[#F6465D] text-[9px] hover:opacity-80">Cancel</button>
+                      <span className="text-[#A0A5AA]">
+                        {order.filled}/{order.amount}
+                      </span>
+                      <button className="text-[#F6465D] text-[9px] hover:opacity-80">
+                        Cancel
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -2282,12 +2554,11 @@ const ExchangeScreen = () => {
                 <div className="text-center py-6">
                   <p className="text-[#A0A5AA] text-xs">No open orders</p>
                 </div>
-              )
-            )}
+              ))}
 
             {/* Positions */}
-            {activeBottomTab === 'positions' && (
-              openPositions.length > 0 ? (
+            {activeBottomTab === "positions" &&
+              (openPositions.length > 0 ? (
                 <div className="space-y-1.5">
                   <div className="grid grid-cols-6 gap-1 text-[#A0A5AA] text-[9px] pb-1 border-b border-[#2B3139]">
                     <span>Pair</span>
@@ -2298,28 +2569,51 @@ const ExchangeScreen = () => {
                     <span>Action</span>
                   </div>
                   {openPositions.map((position) => (
-                    <div key={position.id} className="grid grid-cols-6 gap-1 text-[10px] py-1 hover:bg-[#2B3139] rounded transition-all">
+                    <div
+                      key={position.id}
+                      className="grid grid-cols-6 gap-1 text-[10px] py-1 hover:bg-[#2B3139] rounded transition-all"
+                    >
                       <span className="text-white">{position.pair}</span>
-                      <span className={position.side === 'long' ? 'text-[#0ECB81]' : 'text-[#F6465D]'}>
+                      <span
+                        className={
+                          position.side === "long"
+                            ? "text-[#0ECB81]"
+                            : "text-[#F6465D]"
+                        }
+                      >
                         {position.side.toUpperCase()}
                       </span>
                       <div>
-                        <span className="text-white">{position.entryPrice}</span>
-                        <span className="text-[#A0A5AA] text-[9px]"> / {position.markPrice}</span>
+                        <span className="text-white">
+                          {position.entryPrice}
+                        </span>
+                        <span className="text-[#A0A5AA] text-[9px]">
+                          {" "}
+                          / {position.markPrice}
+                        </span>
                       </div>
                       <div>
                         <span className="text-white">{position.amount}</span>
-                        <span className="text-[#A0A5AA] text-[9px]"> / ${position.value}</span>
+                        <span className="text-[#A0A5AA] text-[9px]">
+                          {" "}
+                          / ${position.value}
+                        </span>
                       </div>
                       <div>
-                        <span className={`${position.pnl > 0 ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
+                        <span
+                          className={`${position.pnl > 0 ? "text-[#0ECB81]" : "text-[#F6465D]"}`}
+                        >
                           ${position.pnl}
                         </span>
-                        <span className={`text-[9px] ${position.pnl > 0 ? 'text-[#0ECB81]' : 'text-[#F6465D]'} ml-0.5`}>
+                        <span
+                          className={`text-[9px] ${position.pnl > 0 ? "text-[#0ECB81]" : "text-[#F6465D]"} ml-0.5`}
+                        >
                           ({position.pnlPercent}%)
                         </span>
                       </div>
-                      <button className="text-[#F0B90B] text-[9px] hover:opacity-80">Close</button>
+                      <button className="text-[#F0B90B] text-[9px] hover:opacity-80">
+                        Close
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -2327,12 +2621,11 @@ const ExchangeScreen = () => {
                 <div className="text-center py-6">
                   <p className="text-[#A0A5AA] text-xs">No open positions</p>
                 </div>
-              )
-            )}
+              ))}
 
             {/* Trade History */}
-            {activeBottomTab === 'history' && (
-              tradeHistory.length > 0 ? (
+            {activeBottomTab === "history" &&
+              (tradeHistory.length > 0 ? (
                 <div className="space-y-1.5">
                   <div className="grid grid-cols-6 gap-1 text-[#A0A5AA] text-[9px] pb-1 border-b border-[#2B3139]">
                     <span>Pair</span>
@@ -2343,15 +2636,26 @@ const ExchangeScreen = () => {
                     <span>Time</span>
                   </div>
                   {tradeHistory.map((trade) => (
-                    <div key={trade.id} className="grid grid-cols-6 gap-1 text-[10px] py-1 hover:bg-[#2B3139] rounded transition-all">
+                    <div
+                      key={trade.id}
+                      className="grid grid-cols-6 gap-1 text-[10px] py-1 hover:bg-[#2B3139] rounded transition-all"
+                    >
                       <span className="text-white">{trade.pair}</span>
-                      <span className={trade.side === 'buy' ? 'text-[#0ECB81]' : 'text-[#F6465D]'}>
+                      <span
+                        className={
+                          trade.side === "buy"
+                            ? "text-[#0ECB81]"
+                            : "text-[#F6465D]"
+                        }
+                      >
                         {trade.side.toUpperCase()}
                       </span>
                       <span className="text-white">${trade.price}</span>
                       <span className="text-white">{trade.amount}</span>
                       <span className="text-white">${trade.total}</span>
-                      <span className="text-[#A0A5AA] text-[9px]">{trade.time}</span>
+                      <span className="text-[#A0A5AA] text-[9px]">
+                        {trade.time}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -2359,8 +2663,7 @@ const ExchangeScreen = () => {
                 <div className="text-center py-6">
                   <p className="text-[#A0A5AA] text-xs">No trade history</p>
                 </div>
-              )
-            )}
+              ))}
           </div>
         </div>
       </div>
@@ -2543,7 +2846,15 @@ const P2PScreen = () => {
 
   const currencies = ["USDT", "BTC", "ETH", "BNB", "SOL", "XRP"];
   const fiats = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CNY"];
-  const paymentMethods = ["all", "Bank Transfer", "Cash App", "PayPal", "USDT", "Revolut", "Wise"];
+  const paymentMethods = [
+    "all",
+    "Bank Transfer",
+    "Cash App",
+    "PayPal",
+    "USDT",
+    "Revolut",
+    "Wise",
+  ];
 
   const formatNumber = (num) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -2556,8 +2867,10 @@ const P2PScreen = () => {
       (offer) =>
         offer.type === activeTab &&
         offer.currency === selectedCurrency &&
-        (selectedPaymentMethod === "all" || offer.payment === selectedPaymentMethod) &&
-        (searchTerm === "" || offer.user.toLowerCase().includes(searchTerm.toLowerCase()))
+        (selectedPaymentMethod === "all" ||
+          offer.payment === selectedPaymentMethod) &&
+        (searchTerm === "" ||
+          offer.user.toLowerCase().includes(searchTerm.toLowerCase())),
     );
 
     filtered.sort((a, b) => {
@@ -2602,14 +2915,14 @@ const P2PScreen = () => {
     if (amount < selectedOffer.limitMin || amount > selectedOffer.limitMax) {
       showNotificationMessage(
         `Amount must be between ${selectedOffer.limitMin} and ${selectedOffer.limitMax} ${selectedOffer.currency}`,
-        "error"
+        "error",
       );
       return;
     }
 
     showNotificationMessage(
       `Order placed! Please send ${amount} ${selectedOffer.currency} to complete the trade.`,
-      "success"
+      "success",
     );
     setShowOrderModal(false);
   };
@@ -2622,7 +2935,9 @@ const P2PScreen = () => {
   };
 
   const getBestPrice = () => {
-    const offers = P2P_OFFERS.filter((o) => o.type === activeTab && o.currency === selectedCurrency);
+    const offers = P2P_OFFERS.filter(
+      (o) => o.type === activeTab && o.currency === selectedCurrency,
+    );
     if (offers.length === 0) return null;
     return activeTab === "buy"
       ? Math.min(...offers.map((o) => o.price))
@@ -2640,11 +2955,13 @@ const P2PScreen = () => {
             notificationType === "success"
               ? "bg-[#0ECB81]/90"
               : notificationType === "error"
-              ? "bg-[#F6465D]/90"
-              : "bg-[#F0B90B]/90"
+                ? "bg-[#F6465D]/90"
+                : "bg-[#F0B90B]/90"
           }`}
         >
-          <p className="text-white text-xs font-medium text-center">{notificationMessage}</p>
+          <p className="text-white text-xs font-medium text-center">
+            {notificationMessage}
+          </p>
         </div>
       )}
 
@@ -2653,7 +2970,9 @@ const P2PScreen = () => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[#F0B90B] text-xs font-semibold">P2P Trading</p>
-            <p className="text-white text-sm font-bold">0% Fee • Escrow Protected</p>
+            <p className="text-white text-sm font-bold">
+              0% Fee • Escrow Protected
+            </p>
             <p className="text-[#A0A5AA] text-[10px] mt-0.5">
               Trade directly with other users. Safe and secure.
             </p>
@@ -2708,7 +3027,8 @@ const P2PScreen = () => {
           <div className="bg-[#1E2329] rounded-lg p-2">
             <div className="flex justify-between items-center">
               <span className="text-[#A0A5AA] text-[9px]">
-                Best {activeTab === "buy" ? "buy" : "sell"} price for {selectedCurrency}
+                Best {activeTab === "buy" ? "buy" : "sell"} price for{" "}
+                {selectedCurrency}
               </span>
               <div className="flex items-center gap-1.5">
                 <span className="text-white font-semibold text-[11px]">
@@ -2723,7 +3043,10 @@ const P2PScreen = () => {
         {/* Search and Filter Row */}
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search size={12} className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-[#A0A5AA]" />
+            <Search
+              size={12}
+              className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-[#A0A5AA]"
+            />
             <input
               type="text"
               placeholder="Search by username..."
@@ -2743,7 +3066,9 @@ const P2PScreen = () => {
         {/* Payment Method Filter Dropdown */}
         {showPaymentFilter && (
           <div className="bg-[#1E2329] rounded-lg p-2 absolute right-4 left-4 mt-1 z-10 shadow-xl">
-            <p className="text-white text-[11px] font-semibold mb-1.5">Payment Method</p>
+            <p className="text-white text-[11px] font-semibold mb-1.5">
+              Payment Method
+            </p>
             <div className="space-y-0.5">
               {paymentMethods.map((method) => (
                 <button
@@ -2785,7 +3110,9 @@ const P2PScreen = () => {
 
       {/* Sort Header */}
       <div className="flex justify-between items-center px-1">
-        <span className="text-[#A0A5AA] text-[9px]">Found {getFilteredOffers().length} offers</span>
+        <span className="text-[#A0A5AA] text-[9px]">
+          Found {getFilteredOffers().length} offers
+        </span>
         <div className="flex gap-2">
           {[
             { key: "price", label: "Price" },
@@ -2805,7 +3132,9 @@ const P2PScreen = () => {
               className="text-[#A0A5AA] text-[9px] flex items-center gap-0.5"
             >
               {sort.label}
-              {sortBy === sort.key && <span>{sortOrder === "asc" ? "↑" : "↓"}</span>}
+              {sortBy === sort.key && (
+                <span>{sortOrder === "asc" ? "↑" : "↓"}</span>
+              )}
             </button>
           ))}
         </div>
@@ -2826,18 +3155,28 @@ const P2PScreen = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-white font-semibold text-[11px]">{offer.user}</p>
+                    <p className="text-white font-semibold text-[11px]">
+                      {offer.user}
+                    </p>
                     {offer.merchant && (
                       <span className="px-1 py-0.5 bg-[#F0B90B]/20 rounded text-[8px] text-[#F0B90B] font-semibold">
                         Merchant
                       </span>
                     )}
-                    {offer.verified && <Shield size={9} className="text-[#0ECB81]" />}
+                    {offer.verified && (
+                      <Shield size={9} className="text-[#0ECB81]" />
+                    )}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-[#A0A5AA] text-[9px]">{formatNumber(offer.completed)}+ trades</p>
-                    <p className="text-[#0ECB81] text-[9px]">★ {offer.completionRate}%</p>
-                    <p className="text-[#A0A5AA] text-[9px]">⏱️ {offer.responseTime}</p>
+                    <p className="text-[#A0A5AA] text-[9px]">
+                      {formatNumber(offer.completed)}+ trades
+                    </p>
+                    <p className="text-[#0ECB81] text-[9px]">
+                      ★ {offer.completionRate}%
+                    </p>
+                    <p className="text-[#A0A5AA] text-[9px]">
+                      ⏱️ {offer.responseTime}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -2855,7 +3194,9 @@ const P2PScreen = () => {
                 <p className="text-white font-bold text-sm">
                   ${offer.price.toLocaleString()}
                 </p>
-                <p className="text-[#A0A5AA] text-[8px]">≈ {offer.price} {selectedFiat}</p>
+                <p className="text-[#A0A5AA] text-[8px]">
+                  ≈ {offer.price} {selectedFiat}
+                </p>
               </div>
               <div>
                 <p className="text-[#A0A5AA] text-[8px]">Limit</p>
@@ -2863,13 +3204,16 @@ const P2PScreen = () => {
                   {offer.limitMin} - {offer.limitMax} {offer.currency}
                 </p>
                 <p className="text-[#A0A5AA] text-[8px]">
-                  ≈ ${(offer.limitMin * offer.price).toFixed(0)} - ${(offer.limitMax * offer.price).toFixed(0)}
+                  ≈ ${(offer.limitMin * offer.price).toFixed(0)} - $
+                  {(offer.limitMax * offer.price).toFixed(0)}
                 </p>
               </div>
               <div>
                 <p className="text-[#A0A5AA] text-[8px]">Payment</p>
                 <div className="flex items-center gap-1">
-                  <p className="text-white font-semibold text-[10px]">{offer.payment}</p>
+                  <p className="text-white font-semibold text-[10px]">
+                    {offer.payment}
+                  </p>
                   <div className="w-1.5 h-1.5 bg-[#0ECB81] rounded-full"></div>
                 </div>
                 <p className="text-[#A0A5AA] text-[8px]">Auto-release</p>
@@ -2906,7 +3250,10 @@ const P2PScreen = () => {
               <h3 className="text-white font-bold text-sm">
                 {activeTab === "buy" ? "Buy" : "Sell"} {selectedOffer.currency}
               </h3>
-              <button onClick={() => setShowOrderModal(false)} className="text-[#A0A5AA]">
+              <button
+                onClick={() => setShowOrderModal(false)}
+                className="text-[#A0A5AA]"
+              >
                 <X size={16} />
               </button>
             </div>
@@ -2917,9 +3264,12 @@ const P2PScreen = () => {
                 {selectedOffer.userAvatar}
               </div>
               <div>
-                <p className="text-white font-semibold text-[11px]">{selectedOffer.user}</p>
+                <p className="text-white font-semibold text-[11px]">
+                  {selectedOffer.user}
+                </p>
                 <p className="text-[#A0A5AA] text-[9px]">
-                  {formatNumber(selectedOffer.completed)}+ trades • {selectedOffer.completionRate}% completion
+                  {formatNumber(selectedOffer.completed)}+ trades •{" "}
+                  {selectedOffer.completionRate}% completion
                 </p>
               </div>
             </div>
@@ -2929,13 +3279,15 @@ const P2PScreen = () => {
               <div className="flex justify-between text-[11px]">
                 <span className="text-[#A0A5AA]">Price</span>
                 <span className="text-white font-semibold">
-                  {selectedOffer.price} {selectedFiat} per {selectedOffer.currency}
+                  {selectedOffer.price} {selectedFiat} per{" "}
+                  {selectedOffer.currency}
                 </span>
               </div>
               <div className="flex justify-between text-[11px]">
                 <span className="text-[#A0A5AA]">Limit</span>
                 <span className="text-white">
-                  {selectedOffer.limitMin} - {selectedOffer.limitMax} {selectedOffer.currency}
+                  {selectedOffer.limitMin} - {selectedOffer.limitMax}{" "}
+                  {selectedOffer.currency}
                 </span>
               </div>
               <div className="flex justify-between text-[11px]">
@@ -2946,7 +3298,9 @@ const P2PScreen = () => {
 
             {/* Amount Input */}
             <div className="mb-3">
-              <p className="text-[#A0A5AA] text-[11px] mb-1">Amount ({selectedOffer.currency})</p>
+              <p className="text-[#A0A5AA] text-[11px] mb-1">
+                Amount ({selectedOffer.currency})
+              </p>
               <input
                 type="number"
                 value={orderAmount}
@@ -2956,14 +3310,18 @@ const P2PScreen = () => {
               />
               {orderAmount && (
                 <p className="text-[#A0A5AA] text-[9px] mt-1">
-                  Total: ${(parseFloat(orderAmount) * selectedOffer.price).toFixed(2)} {selectedFiat}
+                  Total: $
+                  {(parseFloat(orderAmount) * selectedOffer.price).toFixed(2)}{" "}
+                  {selectedFiat}
                 </p>
               )}
             </div>
 
             {/* Message */}
             <div className="mb-3">
-              <p className="text-[#A0A5AA] text-[11px] mb-1">Message (Optional)</p>
+              <p className="text-[#A0A5AA] text-[11px] mb-1">
+                Message (Optional)
+              </p>
               <textarea
                 value={orderMessage}
                 onChange={(e) => setOrderMessage(e.target.value)}
@@ -2975,11 +3333,15 @@ const P2PScreen = () => {
 
             {/* Terms */}
             <div className="mb-3 p-2 bg-[#2B3139]/50 rounded-lg">
-              <p className="text-[#F0B90B] text-[9px] font-semibold mb-0.5">Trade Terms</p>
+              <p className="text-[#F0B90B] text-[9px] font-semibold mb-0.5">
+                Trade Terms
+              </p>
               <p className="text-[#A0A5AA] text-[9px]">{selectedOffer.terms}</p>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <Shield size={10} className="text-[#0ECB81]" />
-                <p className="text-[#A0A5AA] text-[8px]">Escrow protected. Funds are held securely.</p>
+                <p className="text-[#A0A5AA] text-[8px]">
+                  Escrow protected. Funds are held securely.
+                </p>
               </div>
             </div>
 
@@ -2999,14 +3361,19 @@ const P2PScreen = () => {
         <div className="flex items-start gap-2">
           <Shield size={14} className="text-[#0ECB81] shrink-0 mt-0.5" />
           <div>
-            <p className="text-[#F0B90B] text-[11px] font-semibold">Trade with confidence</p>
+            <p className="text-[#F0B90B] text-[11px] font-semibold">
+              Trade with confidence
+            </p>
             <p className="text-[#A0A5AA] text-[9px] mt-0.5">
-              All trades are protected by escrow. Your funds are safe until both parties confirm.
+              All trades are protected by escrow. Your funds are safe until both
+              parties confirm.
             </p>
             <div className="flex gap-2 mt-1.5">
               <span className="text-[#0ECB81] text-[8px]">✓ 100% secure</span>
               <span className="text-[#0ECB81] text-[8px]">✓ 24/7 support</span>
-              <span className="text-[#0ECB81] text-[8px]">✓ Fast dispute resolution</span>
+              <span className="text-[#0ECB81] text-[8px]">
+                ✓ Fast dispute resolution
+              </span>
             </div>
           </div>
         </div>
@@ -3057,7 +3424,6 @@ const P2PScreen = () => {
     </div>
   );
 };
-
 
 // Gift Card Screen Component
 const GiftCardScreen = () => {
@@ -3301,23 +3667,156 @@ const BottomNav = ({ activeTab, setActiveTab }) => {
   );
 };
 
-// Header Component
-const Header = ({ title }) => {
+// Header Component with clickable profile and dropdown
+const Header = ({ title, user, onLogout }) => {
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <div className="flex justify-between items-center mb-6">
       <div>
         <p className="text-[#A0A5AA] text-xs">Welcome back,</p>
-        <h1 className="text-white text-xl font-bold">John Doe</h1>
+        <h1 className="text-white text-xl font-bold">
+          {user?.username || "John Doe"}
+        </h1>
       </div>
       <div className="flex gap-2">
-        <button className="p-2 bg-[#1E2329] rounded-xl relative">
+        <button className="p-2 bg-[#1E2329] rounded-xl relative hover:bg-[#2A3036] transition-all duration-200">
           <Bell size={18} className="text-[#F0B90B]" />
           <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
         </button>
-        <button className="p-2 bg-[#1E2329] rounded-xl">
-          <User size={18} className="text-[#A0A5AA]" />
-        </button>
+
+        {/* Profile Button with Dropdown */}
+        <div className="relative" ref={profileRef}>
+          <button
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className="p-2 bg-[#1E2329] rounded-xl hover:bg-[#2A3036] transition-all duration-200 group"
+          >
+            <User
+              size={18}
+              className="text-[#A0A5AA] group-hover:text-[#F0B90B] transition-colors duration-200"
+            />
+          </button>
+
+          {/* Dropdown Menu */}
+          {isProfileOpen && (
+            <div className="absolute right-0 mt-2 w-64 bg-[#1E2329] rounded-xl shadow-2xl border border-[#2A3036] overflow-hidden z-50 animate-slideDown">
+              {/* User Info Section */}
+              <div className="p-4 border-b border-[#2A3036]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-linear-to-br from-[#F0B90B] to-[#D4940A] rounded-full flex items-center justify-center">
+                    <span className="text-[#0A0B0D] font-bold text-lg">
+                      {user?.name?.charAt(0) || "J"}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold text-sm">
+                      {user?.username || "John Doe"}
+                    </p>
+                    <p className="text-[#A0A5AA] text-xs">
+                      {user?.email || "john@example.com"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* UID Section */}
+              <div className="p-4 border-b border-[#2A3036] bg-[#1A1E23]">
+                <p className="text-[#A0A5AA] text-xs uppercase tracking-wider mb-1">
+                  User ID
+                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <code className="text-[#F0B90B] text-sm font-mono bg-[#0A0B0D] px-2 py-1 rounded flex-1">
+                    {user?.user_uid || "UID_8X9K2M4N7P"}
+                  </code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        user?.uid || "UID_8X9K2M4N7P",
+                      );
+                      // Optional: Add toast notification here
+                    }}
+                    className="text-[#A0A5AA] hover:text-[#F0B90B] transition-colors"
+                    title="Copy UID"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"
+                      ></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Logout Button */}
+              <button
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  onLogout?.();
+                }}
+                className="w-full p-3 text-left text-red-400 hover:bg-red-500/10 transition-all duration-200 flex items-center gap-2 group"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span className="text-sm font-medium group-hover:text-red-400">
+                  Logout
+                </span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-slideDown {
+          animation: slideDown 0.2s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
@@ -3328,6 +3827,13 @@ const Header = ({ title }) => {
 
 const UI = () => {
   const [activeTab, setActiveTab] = useState("home");
+  const { user, account, wallet, loading, logout } = useMe();
+
+  if (loading) return <LoadingSpinner />;
+
+  const handleLogout = async () => {
+    await logout?.();
+  };
 
   const renderScreen = () => {
     switch (activeTab) {
@@ -3350,7 +3856,7 @@ const UI = () => {
     <div className="min-h-screen bg-[#0A0B0D]">
       {/* Main Content */}
       <div className="px-4 pt-6 pb-4">
-        <Header />
+        <Header user={user} onLogout={handleLogout} />
         {renderScreen()}
       </div>
 
@@ -3368,12 +3874,27 @@ const UI = () => {
           50% { transform: scale(1.05); }
         }
         
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
         .animate-bounce {
           animation: bounce 0.6s ease-in-out infinite;
         }
         
         .animate-pulse-slow {
           animation: pulse-slow 2s ease-in-out infinite;
+        }
+        
+        .animate-slideDown {
+          animation: slideDown 0.2s ease-out;
         }
         
         .animation-delay-200 {

@@ -1,5 +1,6 @@
 // LoginPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Mail,
   Lock,
@@ -21,6 +22,87 @@ const LoginPage = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  // Create axios instance with default config including withCredentials
+  const apiClient = axios.create({
+    baseURL: 'http://localhost:8000',
+    timeout: 10000,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    withCredentials: true, // Enable sending cookies with requests
+  });
+
+  // Add request interceptor for debugging and token injection
+  apiClient.interceptors.request.use(
+    (config) => {
+      console.log('Making request to:', config.url, config.data);
+      console.log('With credentials:', config.withCredentials);
+      
+      // If you still need to send token in header alongside cookies
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
+  // Add response interceptor for debugging and token refresh
+  apiClient.interceptors.response.use(
+    (response) => {
+      console.log('Response received:', response.status, response.data);
+      console.log('Cookies received:', document.cookie);
+      
+      // If server sends new token in response headers or body
+      if (response.data.token) {
+        const token = response.data.token;
+        if (rememberMe || response.data.rememberMe) {
+          localStorage.setItem('authToken', token);
+        } else {
+          sessionStorage.setItem('authToken', token);
+        }
+        // Update default header
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+      
+      // Handle user data if sent
+      if (response.data.user) {
+        if (rememberMe) {
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+        } else {
+          sessionStorage.setItem('user', JSON.stringify(response.data.user));
+        }
+      }
+      
+      return response;
+    },
+    (error) => {
+      console.error('Response error:', error.response?.status, error.response?.data);
+      
+      // Handle 401 Unauthorized - token might be expired
+      if (error.response?.status === 401) {
+        // Clear stored tokens
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        sessionStorage.removeItem('user');
+        
+        // Redirect to login if not already there
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
+      
+      return Promise.reject(error);
+    }
+  );
 
   const validateForm = () => {
     const newErrors = {};
@@ -43,19 +125,158 @@ const LoginPage = () => {
     if (!validateForm()) return;
     
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    setApiError('');
+    setFieldErrors({});
+    
+    try {
+      // Send login request to backend with cookies enabled
+      const response = await apiClient.post('/api/login', {
+        email: email.trim(),
+        password: password,
+        rememberMe: rememberMe
+      });
+
+      // Handle successful login
+      const { message, requiresTwoFactor, twoFactorToken } = response.data;
+      
+      // Show success message
       setShowSuccess(true);
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 1500);
-    }, 1500);
+      
+      // Check if 2FA is required
+      if (requiresTwoFactor && twoFactorToken) {
+        // Store 2FA token for verification
+        sessionStorage.setItem('twoFactorToken', twoFactorToken);
+        sessionStorage.setItem('tempEmail', email);
+        
+        // Redirect to 2FA verification page after delay
+        setTimeout(() => {
+          window.location.href = '/verify-2fa';
+        }, 1500);
+      } else {
+        // Redirect to home/dashboard after 1.5 seconds
+        setTimeout(() => {
+          window.location.href = '/home';
+        }, 1500);
+      }
+      
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      // Handle different types of errors
+      if (error.response) {
+        // Server responded with error status
+        const { status, data } = error.response;
+        
+        switch (status) {
+          case 400:
+            // Bad request - validation errors
+            if (data.errors) {
+              // Field-specific errors
+              setFieldErrors(data.errors);
+              // Also show first error in API error banner
+              const firstError = Object.values(data.errors)[0];
+              setApiError(Array.isArray(firstError) ? firstError[0] : firstError);
+            } else {
+              setApiError(data.message || 'Invalid request. Please check your input.');
+            }
+            break;
+          case 401:
+            // Unauthorized - invalid credentials
+            setApiError(data.message || 'Invalid email or password. Please try again.');
+            // Clear password field for security
+            setPassword('');
+            break;
+          case 403:
+            // Forbidden - account locked or not verified
+            setApiError(data.message || 'Your account is locked or not verified. Please check your email for verification link.');
+            break;
+          case 404:
+            // Not found - user doesn't exist
+            setApiError(data.message || 'Account not found. Please check your email or sign up.');
+            break;
+          case 423:
+            // Locked - too many attempts
+            setApiError(data.message || 'Account temporarily locked due to too many failed attempts. Please try again later.');
+            break;
+          case 429:
+            // Too many requests
+            setApiError(data.message || 'Too many login attempts. Please wait a few minutes before trying again.');
+            break;
+          case 500:
+            // Server error
+            setApiError('Server error. Please try again later or contact support.');
+            break;
+          default:
+            setApiError(data.message || `Login failed with status ${status}. Please try again.`);
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        setApiError('Unable to connect to server. Please check: \n• Server is running on port 8000\n• CORS is properly configured\n• Network connection is active');
+      } else {
+        // Something else happened
+        setApiError(error.message || 'An unexpected error occurred. Please try again.');
+      }
+      
+      // Auto-hide error after 5 seconds
+      setTimeout(() => setApiError(''), 5000);
+      
+      // Auto-clear field errors after 5 seconds
+      setTimeout(() => setFieldErrors({}), 5000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const navigateToHome = () => {
     window.location.href = '/';
   };
+
+  // Clear field error when user starts typing
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+    if (fieldErrors.email) {
+      setFieldErrors({ ...fieldErrors, email: null });
+    }
+    if (errors.email) {
+      setErrors({ ...errors, email: null });
+    }
+  };
+
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    if (fieldErrors.password) {
+      setFieldErrors({ ...fieldErrors, password: null });
+    }
+    if (errors.password) {
+      setErrors({ ...errors, password: null });
+    }
+  };
+
+  // Check for existing session on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      if (token) {
+        try {
+          // Verify token with server
+          const response = await apiClient.get('/api/verify-token');
+          if (response.data.valid) {
+            // Redirect to home if already authenticated
+            window.location.href = '/home';
+          }
+        } catch (error) {
+          // Token invalid, clear storage
+          localStorage.removeItem('authToken');
+          sessionStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          sessionStorage.removeItem('user');
+          console.log('Session expired or invalid');
+        }
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0A0B0D] flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
@@ -84,12 +305,12 @@ const LoginPage = () => {
             <div className="relative group">
               <div className="absolute inset-0 bg-[#F0B90B] rounded-lg blur-xl opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="relative w-12 h-12 bg-linear-to-br from-[#F0B90B] to-[#F0B90B]/80 rounded-lg flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                <span className="text-[#0A0B0D] font-bold text-xl">C</span>
+                <span className="text-[#0A0B0D] font-bold text-xl">B</span>
               </div>
             </div>
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
-          <p className="text-[#A0A5AA]">Sign in to continue to CryptHub</p>
+          <p className="text-[#A0A5AA]">Sign in to continue to BitNex</p>
         </div>
 
         {/* Success Message */}
@@ -99,7 +320,20 @@ const LoginPage = () => {
               <CheckCircle size={20} className="text-[#0ECB81]" />
               <div>
                 <p className="text-[#0ECB81] font-medium">Login Successful!</p>
-                <p className="text-[#A0A5AA] text-sm">Redirecting to dashboard...</p>
+                <p className="text-[#A0A5AA] text-sm">Redirecting...</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* API Error Message */}
+        {apiError && (
+          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl animate-fade-in-up">
+            <div className="flex items-center gap-3">
+              <AlertCircle size={20} className="text-red-500 shrink-0" />
+              <div>
+                <p className="text-red-500 font-medium">Login Failed</p>
+                <p className="text-[#A0A5AA] text-sm whitespace-pre-line">{apiError}</p>
               </div>
             </div>
           </div>
@@ -115,14 +349,20 @@ const LoginPage = () => {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`w-full pl-10 pr-4 py-3 bg-[#1E2329] border ${errors.email ? 'border-red-500' : 'border-[#2B3139]'} rounded-xl text-white placeholder-[#A0A5AA] focus:outline-none focus:border-[#F0B90B] transition-all`}
+                onChange={handleEmailChange}
+                className={`w-full pl-10 pr-4 py-3 bg-[#1E2329] border ${
+                  errors.email || fieldErrors.email 
+                    ? 'border-red-500' 
+                    : 'border-[#2B3139]'
+                } rounded-xl text-white placeholder-[#A0A5AA] focus:outline-none focus:border-[#F0B90B] transition-all`}
                 placeholder="Enter your email"
+                disabled={isLoading}
+                autoComplete="email"
               />
             </div>
-            {errors.email && (
+            {(errors.email || fieldErrors.email) && (
               <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
-                <AlertCircle size={12} /> {errors.email}
+                <AlertCircle size={12} /> {fieldErrors.email || errors.email}
               </p>
             )}
           </div>
@@ -135,21 +375,28 @@ const LoginPage = () => {
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`w-full pl-10 pr-12 py-3 bg-[#1E2329] border ${errors.password ? 'border-red-500' : 'border-[#2B3139]'} rounded-xl text-white placeholder-[#A0A5AA] focus:outline-none focus:border-[#F0B90B] transition-all`}
+                onChange={handlePasswordChange}
+                className={`w-full pl-10 pr-12 py-3 bg-[#1E2329] border ${
+                  errors.password || fieldErrors.password 
+                    ? 'border-red-500' 
+                    : 'border-[#2B3139]'
+                } rounded-xl text-white placeholder-[#A0A5AA] focus:outline-none focus:border-[#F0B90B] transition-all`}
                 placeholder="Enter your password"
+                disabled={isLoading}
+                autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#A0A5AA] hover:text-white transition-colors"
+                disabled={isLoading}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            {errors.password && (
+            {(errors.password || fieldErrors.password) && (
               <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
-                <AlertCircle size={12} /> {errors.password}
+                <AlertCircle size={12} /> {fieldErrors.password || errors.password}
               </p>
             )}
           </div>
@@ -162,6 +409,7 @@ const LoginPage = () => {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 rounded border-[#2B3139] bg-[#1E2329] text-[#F0B90B] focus:ring-[#F0B90B] focus:ring-offset-0"
+                disabled={isLoading}
               />
               <span className="text-[#A0A5AA] text-sm">Remember me</span>
             </label>
@@ -177,7 +425,10 @@ const LoginPage = () => {
             className="w-full py-3 bg-linear-to-r from-[#F0B90B] to-[#F0B90B]/90 text-[#0A0B0D] rounded-xl font-semibold hover:shadow-lg hover:shadow-[#F0B90B]/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
-              <div className="w-5 h-5 border-2 border-[#0A0B0D] border-t-transparent rounded-full animate-spin"></div>
+              <>
+                <div className="w-5 h-5 border-2 border-[#0A0B0D] border-t-transparent rounded-full animate-spin"></div>
+                <span>Signing In...</span>
+              </>
             ) : (
               <>
                 Sign In
@@ -197,8 +448,15 @@ const LoginPage = () => {
 
         {/* Home Link */}
         <p className="text-center text-[#A0A5AA] text-sm mt-2">
-          <a href="/" className="text-[#A0A5AA] hover:text-white transition-colors flex items-center justify-center gap-1">
-            <Home size={14} />
+          <a 
+            href="/" 
+            onClick={(e) => {
+              e.preventDefault();
+              navigateToHome();
+            }}
+            className="text-[#A0A5AA] hover:text-white transition-colors flex items-center justify-center gap-1 group"
+          >
+            <Home size={14} className="group-hover:-translate-y-0.5 transition-transform" />
             Return to Home
           </a>
         </p>

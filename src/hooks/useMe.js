@@ -12,7 +12,7 @@ export default function useMe() {
   useEffect(() => {
     const fetchMe = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/api/v1/me", {
+        const res = await axios.get("https://bitnex-production.up.railway.app/api/v1/me", {
           withCredentials: true, // 🔥 sends cookies automatically
         });
 
@@ -32,7 +32,7 @@ export default function useMe() {
   const logout = async () => {
     try {
       await axios.post(
-        "http://localhost:8000/api/auth/logout",
+        "https://bitnex-production.up.railway.app/api/auth/logout",
         {},
         { withCredentials: true },
       );

@@ -110,7 +110,7 @@ const SignUpPage = () => {
     
     try {
       // Send registration data to localhost:8000/api/register
-      const response = await fetch('http://localhost:8000/api/auth/register', {
+      const response = await fetch('https://bitnex-production.up.railway.app/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ const SignUpPage = () => {
 
     try {
       // Send verification code to /api/verify with token as query parameter
-      const response = await fetch(`http://localhost:8000/api/auth/verify?token=${verificationCode}`, {
+      const response = await fetch(`https://bitnex-production.up.railway.app/api/auth/verify?token=${verificationCode}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -194,7 +194,7 @@ const SignUpPage = () => {
 
     try {
       // Request new token from /api/resend
-      const response = await fetch('http://localhost:8000/api/auth/resend', {
+      const response = await fetch('https://bitnex-production.up.railway.app/api/auth/resend', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

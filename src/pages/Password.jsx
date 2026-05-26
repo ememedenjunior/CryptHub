@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Mail, 
-  User, 
+  Mail,  
   Key, 
   Lock, 
   CheckCircle, 
@@ -38,7 +37,7 @@ const ForgotPassword = () => {
   const [userEmail, setUserEmail] = useState('');
 
   // API Configuration
-  const API_BASE_URL ='http://localhost:8000/api';
+  const API_BASE_URL ='https://bitnex-production.up.railway.app/api';
 
   // Helper function to handle API errors
   const handleApiError = (error) => {

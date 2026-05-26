@@ -16,7 +16,7 @@ import {
 
  // Create axios instance with default config including withCredentials
   const apiClient = axios.create({
-    baseURL: 'bitnex-production.up.railway.app:8000',
+    baseURL: 'https://bitnex-production.up.railway.app',
     timeout: 10000,
     headers: {
       'Content-Type': 'application/json',

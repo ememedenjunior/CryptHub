@@ -39,9 +39,9 @@ const App = () => {
         <Route
           path="/home"
           element={
-            <ProtectedRoute>
+            // <ProtectedRoute>
               <UI />
-            </ProtectedRoute>
+            // </ProtectedRoute>
           }
         />
 

@@ -141,7 +141,7 @@ const LoginPage = () => {
         }
       } else if (error.request) {
         // Request was made but no response received
-        setApiError('Unable to connect to server. Please check: \n• Server is running on port 8000\n• CORS is properly configured\n• Network connection is active');
+        setApiError('Unable to connect to server. Please check: \n• Network connection is active');
       } else {
         // Something else happened
         setApiError(error.message || 'An unexpected error occurred. Please try again.');

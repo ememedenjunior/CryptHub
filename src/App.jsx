@@ -6,6 +6,7 @@ import HeroPage from "./pages/Heropage";
 import UI from "./pages/UI";
 import ProtectedRoute from "./components/Protect";
 import UnProtectedRoute from "./components/NotProtect";
+import ForgotPassword from "./pages/Password";
 
 const App = () => {
   return (
@@ -41,6 +42,15 @@ const App = () => {
             <ProtectedRoute>
               <UI />
             </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/forgot-password"
+          element={
+            <UnProtectedRoute>
+              <ForgotPassword />
+            </UnProtectedRoute>
           }
         />
       </Routes>

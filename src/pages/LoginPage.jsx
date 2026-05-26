@@ -14,6 +14,17 @@ import {
   ArrowLeft
 } from 'lucide-react';
 
+ // Create axios instance with default config including withCredentials
+  const apiClient = axios.create({
+    baseURL: 'http://localhost:8000',
+    timeout: 10000,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    withCredentials: true, // Enable sending cookies with requests
+  });
+
+
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,85 +35,6 @@ const LoginPage = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [apiError, setApiError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
-
-  // Create axios instance with default config including withCredentials
-  const apiClient = axios.create({
-    baseURL: 'http://localhost:8000',
-    timeout: 10000,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    withCredentials: true, // Enable sending cookies with requests
-  });
-
-  // Add request interceptor for debugging and token injection
-  apiClient.interceptors.request.use(
-    (config) => {
-      console.log('Making request to:', config.url, config.data);
-      console.log('With credentials:', config.withCredentials);
-      
-      // If you still need to send token in header alongside cookies
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
-
-  // Add response interceptor for debugging and token refresh
-  apiClient.interceptors.response.use(
-    (response) => {
-      console.log('Response received:', response.status, response.data);
-      console.log('Cookies received:', document.cookie);
-      
-      // If server sends new token in response headers or body
-      if (response.data.token) {
-        const token = response.data.token;
-        if (rememberMe || response.data.rememberMe) {
-          localStorage.setItem('authToken', token);
-        } else {
-          sessionStorage.setItem('authToken', token);
-        }
-        // Update default header
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      }
-      
-      // Handle user data if sent
-      if (response.data.user) {
-        if (rememberMe) {
-          localStorage.setItem('user', JSON.stringify(response.data.user));
-        } else {
-          sessionStorage.setItem('user', JSON.stringify(response.data.user));
-        }
-      }
-      
-      return response;
-    },
-    (error) => {
-      console.error('Response error:', error.response?.status, error.response?.data);
-      
-      // Handle 401 Unauthorized - token might be expired
-      if (error.response?.status === 401) {
-        // Clear stored tokens
-        localStorage.removeItem('authToken');
-        sessionStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        sessionStorage.removeItem('user');
-        
-        // Redirect to login if not already there
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
-        }
-      }
-      
-      return Promise.reject(error);
-    }
-  );
 
   const validateForm = () => {
     const newErrors = {};
@@ -130,7 +62,7 @@ const LoginPage = () => {
     
     try {
       // Send login request to backend with cookies enabled
-      const response = await apiClient.post('/api/login', {
+      const response = await apiClient.post('/api/auth/login', {
         email: email.trim(),
         password: password,
         rememberMe: rememberMe
@@ -159,9 +91,7 @@ const LoginPage = () => {
         }, 1500);
       }
       
-    } catch (error) {
-      console.error('Login error:', error);
-      
+    } catch (error) {      
       // Handle different types of errors
       if (error.response) {
         // Server responded with error status
@@ -252,32 +182,6 @@ const LoginPage = () => {
     }
   };
 
-  // Check for existing session on component mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      if (token) {
-        try {
-          // Verify token with server
-          const response = await apiClient.get('/api/verify-token');
-          if (response.data.valid) {
-            // Redirect to home if already authenticated
-            window.location.href = '/home';
-          }
-        } catch (error) {
-          // Token invalid, clear storage
-          localStorage.removeItem('authToken');
-          sessionStorage.removeItem('authToken');
-          localStorage.removeItem('user');
-          sessionStorage.removeItem('user');
-          console.log('Session expired or invalid');
-        }
-      }
-    };
-    
-    checkAuth();
-  }, []);
-
   return (
     <div className="min-h-screen bg-[#0A0B0D] flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       {/* Background Elements */}
@@ -310,7 +214,7 @@ const LoginPage = () => {
             </div>
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
-          <p className="text-[#A0A5AA]">Sign in to continue to BitNex</p>
+          <p className="text-[#A0A5AA]">Sign in to continue to Bitnex</p>
         </div>
 
         {/* Success Message */}

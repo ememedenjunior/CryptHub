@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import useMe from "../hooks/useMe";
 import LoadingSpinner from "../components/Spinner";
+import { useCryptoPrices } from "../hooks/useCryptoPrices";
 
 // ============================================================
 // CONSTANTS & DATA
@@ -70,7 +71,7 @@ const MARKET_DATA = [
   {
     symbol: "BTC",
     name: "Bitcoin",
-    price: 43521.20,
+    price: 43521.2,
     change: 2.4,
     positive: true,
     icon: "₿",
@@ -164,7 +165,7 @@ const MARKET_DATA = [
 // COMPONENTS
 // ============================================================
 
-const HomeScreen = () => {
+const HomeScreen = ({wallet, assets }) => {
   const [showBalance, setShowBalance] = useState(true);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
@@ -177,7 +178,7 @@ const HomeScreen = () => {
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [selectedAssetForDetail, setSelectedAssetForDetail] = useState(null);
   const [showAssetDetailModal, setShowAssetDetailModal] = useState(false);
-  
+
   // Transfer specific states
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferAsset, setTransferAsset] = useState(null);
@@ -188,142 +189,7 @@ const HomeScreen = () => {
   const [recipientInfo, setRecipientInfo] = useState(null);
   const [transferStep, setTransferStep] = useState(1);
 
-  // Mock users database
-  const mockUsers = [
-    { uid: "1000000001", username: "john_doe", email: "john@example.com", name: "John Doe" },
-    { uid: "1000000002", username: "jane_smith", email: "jane@example.com", name: "Jane Smith" },
-    { uid: "1000000003", username: "bob_wilson", email: "bob@example.com", name: "Bob Wilson" },
-    { uid: "1000000004", username: "alice_brown", email: "alice@example.com", name: "Alice Brown" },
-  ];
-
-  const [userAssets, setUserAssets] = useState([
-    {
-      id: 1,
-      symbol: "BTC",
-      name: "Bitcoin",
-      amount: 0.42,
-      value: 18450.0,
-      change: "+2.4%",
-      positive: true,
-      icon: "₿",
-      color: "#F7931A",
-      receiveAddress: "bc1qxyz789...abc123",
-      decimals: 8,
-      price: 43921.50,
-      chain: "bitcoin",
-      contractAddress: "Native Token",
-      website: "https://bitcoin.org",
-      explorer: "https://blockstream.info",
-      marketCap: "$850B",
-      volume24h: "$24.5B",
-      supportsInternalTransfer: true,
-    },
-    {
-      id: 2,
-      symbol: "ETH",
-      name: "Ethereum",
-      amount: 3.2,
-      value: 5340.8,
-      change: "+1.8%",
-      positive: true,
-      icon: "Ξ",
-      color: "#627EEA",
-      receiveAddress: "0x4567...8901def",
-      decimals: 18,
-      price: 1669.00,
-      chain: "ethereum",
-      contractAddress: "Native Token",
-      website: "https://ethereum.org",
-      explorer: "https://etherscan.io",
-      marketCap: "$200B",
-      volume24h: "$12.3B",
-      supportsInternalTransfer: true,
-    },
-    {
-      id: 3,
-      symbol: "BNB",
-      name: "BNB",
-      amount: 5.5,
-      value: 1734.81,
-      change: "+0.8%",
-      positive: true,
-      icon: "B",
-      color: "#F3BA2F",
-      receiveAddress: "bnb1xyz...456abc",
-      decimals: 18,
-      price: 315.42,
-      chain: "bsc",
-      contractAddress: "Native Token",
-      website: "https://bnbchain.org",
-      explorer: "https://bscscan.com",
-      marketCap: "$50B",
-      volume24h: "$1.2B",
-      supportsInternalTransfer: true,
-    },
-    {
-      id: 4,
-      symbol: "SOL",
-      name: "Solana",
-      amount: 25.0,
-      value: 2462.5,
-      change: "+5.2%",
-      positive: true,
-      icon: "◎",
-      color: "#00FFA3",
-      receiveAddress: "Solana...xyz789",
-      decimals: 9,
-      price: 98.50,
-      chain: "solana",
-      contractAddress: "Native Token",
-      website: "https://solana.com",
-      explorer: "https://solscan.io",
-      marketCap: "$42B",
-      volume24h: "$3.1B",
-      supportsInternalTransfer: true,
-    },
-    {
-      id: 5,
-      symbol: "XRP",
-      name: "XRP",
-      amount: 1200,
-      value: 624.0,
-      change: "+1.2%",
-      positive: true,
-      icon: "X",
-      color: "#23292F",
-      receiveAddress: "rXYZ...789abc",
-      decimals: 6,
-      price: 0.52,
-      chain: "ripple",
-      contractAddress: "Native Token",
-      website: "https://xrpl.org",
-      explorer: "https://xrpscan.com",
-      marketCap: "$28B",
-      volume24h: "$0.8B",
-      supportsInternalTransfer: true,
-    },
-    {
-      id: 6,
-      symbol: "SUI",
-      name: "Sui",
-      amount: 500,
-      value: 1245.0,
-      change: "+3.5%",
-      positive: true,
-      icon: "S",
-      color: "#6BCBEF",
-      receiveAddress: "0xabc...123def",
-      decimals: 9,
-      price: 2.49,
-      chain: "sui",
-      contractAddress: "Native Token",
-      website: "https://sui.io",
-      explorer: "https://suiscan.xyz",
-      marketCap: "$2.8B",
-      volume24h: "$0.15B",
-      supportsInternalTransfer: true,
-    },
-  ]);
+  const [userAssets, setUserAssets] = useState(assets);
 
   const [totalPortfolioValue, setTotalPortfolioValue] = useState(0);
   const [totalProfit, setTotalProfit] = useState(0);
@@ -350,20 +216,6 @@ const HomeScreen = () => {
     return price.toLocaleString();
   };
 
-  const searchUserByUID = async (uid) => {
-    if (!uid || uid.length < 10) {
-      setRecipientInfo(null);
-      return;
-    }
-    
-    setIsSearching(true);
-    setTimeout(() => {
-      const found = mockUsers.find(user => user.uid === uid);
-      setRecipientInfo(found || null);
-      setIsSearching(false);
-    }, 500);
-  };
-
   const handleInternalTransfer = async () => {
     if (!transferAsset || !transferAmount || !recipientUID || !recipientInfo) {
       showNotificationMessage("Please fill all fields", "error");
@@ -384,12 +236,12 @@ const HomeScreen = () => {
           return { ...asset, amount: newAmount, value: newValue };
         }
         return asset;
-      })
+      }),
     );
 
     showNotificationMessage(
       `✓ Successfully transferred ${amount} ${transferAsset.symbol} to ${recipientInfo.name}`,
-      "success"
+      "success",
     );
 
     setShowTransferModal(false);
@@ -502,7 +354,9 @@ const HomeScreen = () => {
                 {transferAsset.icon}
               </div>
               <div>
-                <h3 className="text-white font-semibold text-base">Internal Transfer</h3>
+                <h3 className="text-white font-semibold text-base">
+                  Internal Transfer
+                </h3>
                 <p className="text-[#A0A5AA] text-xs">{transferAsset.symbol}</p>
               </div>
             </div>
@@ -519,9 +373,12 @@ const HomeScreen = () => {
               <div className="mb-4 p-3 bg-[#2B3139]/50 rounded-xl">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-[#A0A5AA] text-[9px]">Available Balance</p>
+                    <p className="text-[#A0A5AA] text-[9px]">
+                      Available Balance
+                    </p>
                     <p className="text-white font-semibold text-base">
-                      {transferAsset.amount.toLocaleString()} {transferAsset.symbol}
+                      {transferAsset.amount.toLocaleString()}{" "}
+                      {transferAsset.symbol}
                     </p>
                     <p className="text-[#A0A5AA] text-[9px]">
                       ≈ {formatNumber(transferAsset.value)}
@@ -544,7 +401,6 @@ const HomeScreen = () => {
                     value={recipientUID}
                     onChange={(e) => {
                       setRecipientUID(e.target.value);
-                      searchUserByUID(e.target.value);
                     }}
                     placeholder="Enter 10-digit User UID (e.g., 1000000001)"
                     maxLength={10}
@@ -556,7 +412,7 @@ const HomeScreen = () => {
                     </div>
                   )}
                 </div>
-                
+
                 {recipientInfo && (
                   <div className="mt-2 p-2 bg-[#0ECB81]/10 rounded-lg border border-[#0ECB81]/30">
                     <div className="flex items-center gap-2">
@@ -564,16 +420,22 @@ const HomeScreen = () => {
                         <Check size={12} className="text-[#0ECB81]" />
                       </div>
                       <div>
-                        <p className="text-white text-xs font-medium">{recipientInfo.name}</p>
-                        <p className="text-[#A0A5AA] text-[9px]">@{recipientInfo.username}</p>
+                        <p className="text-white text-xs font-medium">
+                          {recipientInfo.name}
+                        </p>
+                        <p className="text-[#A0A5AA] text-[9px]">
+                          @{recipientInfo.username}
+                        </p>
                       </div>
                     </div>
                   </div>
                 )}
-                
+
                 {recipientUID && !recipientInfo && !isSearching && (
                   <div className="mt-2 p-2 bg-[#F6465D]/10 rounded-lg border border-[#F6465D]/30">
-                    <p className="text-[#F6465D] text-xs">User not found. Please check the UID.</p>
+                    <p className="text-[#F6465D] text-xs">
+                      User not found. Please check the UID.
+                    </p>
                   </div>
                 )}
               </div>
@@ -591,7 +453,9 @@ const HomeScreen = () => {
                     className="w-full p-2.5 bg-[#2B3139] rounded-xl text-white text-sm placeholder-[#A0A5AA] focus:outline-none border border-transparent focus:border-[#F0B90B]"
                   />
                   <button
-                    onClick={() => setTransferAmount(transferAsset.amount.toString())}
+                    onClick={() =>
+                      setTransferAmount(transferAsset.amount.toString())
+                    }
                     className="absolute right-3 top-2 text-[#F0B90B] text-xs font-semibold"
                   >
                     MAX
@@ -599,7 +463,11 @@ const HomeScreen = () => {
                 </div>
                 {transferAmount && parseFloat(transferAmount) > 0 && (
                   <p className="text-[#A0A5AA] text-[10px] mt-1">
-                    ≈ ${(parseFloat(transferAmount) * transferAsset.price).toFixed(2)} USD
+                    ≈ $
+                    {(parseFloat(transferAmount) * transferAsset.price).toFixed(
+                      2,
+                    )}{" "}
+                    USD
                   </p>
                 )}
               </div>
@@ -616,21 +484,35 @@ const HomeScreen = () => {
               </div>
 
               <div className="mb-4 p-2.5 bg-[#2B3139]/50 rounded-xl">
-                <p className="text-[#0ECB81] text-[10px] font-semibold">✓ Internal Transfer Benefits:</p>
-                <p className="text-[#A0A5AA] text-[9px] mt-1">• No network fees (FREE)</p>
+                <p className="text-[#0ECB81] text-[10px] font-semibold">
+                  ✓ Internal Transfer Benefits:
+                </p>
+                <p className="text-[#A0A5AA] text-[9px] mt-1">
+                  • No network fees (FREE)
+                </p>
                 <p className="text-[#A0A5AA] text-[9px]">• Instant transfer</p>
-                <p className="text-[#A0A5AA] text-[9px]">• No blockchain confirmation delay</p>
-                <p className="text-[#A0A5AA] text-[9px]">• Protected by platform security</p>
+                <p className="text-[#A0A5AA] text-[9px]">
+                  • No blockchain confirmation delay
+                </p>
+                <p className="text-[#A0A5AA] text-[9px]">
+                  • Protected by platform security
+                </p>
               </div>
 
               <button
                 onClick={() => {
                   if (!recipientInfo) {
-                    showNotificationMessage("Please enter a valid recipient UID", "error");
+                    showNotificationMessage(
+                      "Please enter a valid recipient UID",
+                      "error",
+                    );
                     return;
                   }
                   if (!transferAmount || parseFloat(transferAmount) <= 0) {
-                    showNotificationMessage("Please enter a valid amount", "error");
+                    showNotificationMessage(
+                      "Please enter a valid amount",
+                      "error",
+                    );
                     return;
                   }
                   if (parseFloat(transferAmount) > transferAsset.amount) {
@@ -647,8 +529,10 @@ const HomeScreen = () => {
           ) : (
             <>
               <div className="mb-4 p-3 bg-[#2B3139]/50 rounded-xl">
-                <p className="text-[#F0B90B] text-xs font-semibold mb-3">Confirm Transfer</p>
-                
+                <p className="text-[#F0B90B] text-xs font-semibold mb-3">
+                  Confirm Transfer
+                </p>
+
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-[#A0A5AA]">From</span>
@@ -656,23 +540,37 @@ const HomeScreen = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#A0A5AA]">To</span>
-                    <span className="text-white font-medium">{recipientInfo?.name}</span>
+                    <span className="text-white font-medium">
+                      {recipientInfo?.name}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#A0A5AA]">Recipient UID</span>
-                    <span className="text-white font-mono text-xs">{recipientUID}</span>
+                    <span className="text-white font-mono text-xs">
+                      {recipientUID}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#A0A5AA]">Asset</span>
-                    <span className="text-white font-medium">{transferAsset.symbol}</span>
+                    <span className="text-white font-medium">
+                      {transferAsset.symbol}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#A0A5AA]">Amount</span>
-                    <span className="text-white font-bold">{transferAmount} {transferAsset.symbol}</span>
+                    <span className="text-white font-bold">
+                      {transferAmount} {transferAsset.symbol}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#A0A5AA]">Value</span>
-                    <span className="text-white">≈ ${(parseFloat(transferAmount) * transferAsset.price).toFixed(2)} USD</span>
+                    <span className="text-white">
+                      ≈ $
+                      {(
+                        parseFloat(transferAmount) * transferAsset.price
+                      ).toFixed(2)}{" "}
+                      USD
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#A0A5AA]">Transfer Fee</span>
@@ -681,7 +579,9 @@ const HomeScreen = () => {
                   {transferNotes && (
                     <div className="flex justify-between text-sm">
                       <span className="text-[#A0A5AA]">Note</span>
-                      <span className="text-white text-xs">{transferNotes}</span>
+                      <span className="text-white text-xs">
+                        {transferNotes}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -758,20 +658,26 @@ const HomeScreen = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-[#A0A5AA] text-xs">24h Change</span>
-                <span className={`text-xs ${selectedAssetForDetail.positive ? "text-[#0ECB81]" : "text-[#F6465D]"} font-semibold`}>
+                <span
+                  className={`text-xs ${selectedAssetForDetail.positive ? "text-[#0ECB81]" : "text-[#F6465D]"} font-semibold`}
+                >
                   {selectedAssetForDetail.change}
                 </span>
               </div>
             </div>
 
             <div className="p-3 bg-[#2B3139]/50 rounded-xl">
-              <p className="text-[#A0A5AA] text-[10px] mb-1">Contract Address</p>
+              <p className="text-[#A0A5AA] text-[10px] mb-1">
+                Contract Address
+              </p>
               <div className="flex justify-between items-center gap-2">
                 <p className="text-white text-[10px] font-mono break-all flex-1">
                   {selectedAssetForDetail.contractAddress}
                 </p>
                 <button
-                  onClick={() => copyToClipboard(selectedAssetForDetail.contractAddress)}
+                  onClick={() =>
+                    copyToClipboard(selectedAssetForDetail.contractAddress)
+                  }
                   className="p-1.5 bg-[#F0B90B]/20 rounded-lg"
                 >
                   <Copy size={12} className="text-[#F0B90B]" />
@@ -799,7 +705,8 @@ const HomeScreen = () => {
               <div className="flex justify-between items-center mb-1">
                 <span className="text-white text-sm">Quantity</span>
                 <span className="text-white text-sm font-semibold">
-                  {selectedAssetForDetail.amount.toLocaleString()} {selectedAssetForDetail.symbol}
+                  {selectedAssetForDetail.amount.toLocaleString()}{" "}
+                  {selectedAssetForDetail.symbol}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -811,14 +718,20 @@ const HomeScreen = () => {
             </div>
 
             <div className="p-3 bg-[#2B3139]/50 rounded-xl">
-              <p className="text-[#F0B90B] text-[10px] font-semibold mb-2">Market Information</p>
+              <p className="text-[#F0B90B] text-[10px] font-semibold mb-2">
+                Market Information
+              </p>
               <div className="flex justify-between mb-1">
                 <span className="text-[#A0A5AA] text-[10px]">Market Cap</span>
-                <span className="text-white text-[10px]">{selectedAssetForDetail.marketCap}</span>
+                <span className="text-white text-[10px]">
+                  {selectedAssetForDetail.marketCap}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#A0A5AA] text-[10px]">24h Volume</span>
-                <span className="text-white text-[10px]">{selectedAssetForDetail.volume24h}</span>
+                <span className="text-white text-[10px]">
+                  {selectedAssetForDetail.volume24h}
+                </span>
               </div>
             </div>
 
@@ -886,7 +799,10 @@ const HomeScreen = () => {
               <h1 className="text-2xl font-bold text-white">
                 {showBalance ? formatNumber(totalPortfolioValue) : "••••••"}
               </h1>
-              <button onClick={() => setShowBalance(!showBalance)} className="p-0.5">
+              <button
+                onClick={() => setShowBalance(!showBalance)}
+                className="p-0.5"
+              >
                 {showBalance ? (
                   <EyeOff size={14} className="text-[#A0A5AA]" />
                 ) : (
@@ -905,15 +821,21 @@ const HomeScreen = () => {
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div className="text-center">
             <p className="text-[#A0A5AA] text-[9px]">24h Change</p>
-            <p className="text-[#0ECB81] text-xs font-semibold">+{profitPercentage}%</p>
+            <p className="text-[#0ECB81] text-xs font-semibold">
+              +{profitPercentage}%
+            </p>
           </div>
           <div className="text-center">
             <p className="text-[#A0A5AA] text-[9px]">Assets</p>
-            <p className="text-white text-xs font-semibold">{userAssets.length}</p>
+            <p className="text-white text-xs font-semibold">
+              {userAssets.length}
+            </p>
           </div>
           <div className="text-center">
             <p className="text-[#A0A5AA] text-[9px]">Profit</p>
-            <p className="text-[#0ECB81] text-xs font-semibold">+${totalProfit.toFixed(0)}</p>
+            <p className="text-[#0ECB81] text-xs font-semibold">
+              +${totalProfit.toFixed(0)}
+            </p>
           </div>
         </div>
       </div>
@@ -921,7 +843,9 @@ const HomeScreen = () => {
       <div>
         <div className="flex justify-between items-center mb-2 px-1">
           <h2 className="text-white text-sm font-semibold">Your Assets</h2>
-          <span className="text-[#A0A5AA] text-[10px]">{userAssets.length} assets</span>
+          <span className="text-[#A0A5AA] text-[10px]">
+            {userAssets.length} assets
+          </span>
         </div>
 
         <div className="space-y-2">
@@ -943,13 +867,19 @@ const HomeScreen = () => {
                     {asset.icon}
                   </div>
                   <div>
-                    <p className="text-white font-semibold text-sm">{asset.name}</p>
+                    <p className="text-white font-semibold text-sm">
+                      {asset.name}
+                    </p>
                     <p className="text-[#A0A5AA] text-[10px]">{asset.symbol}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-white font-semibold text-sm">{formatNumber(asset.price)}</p>
-                  <p className={`text-[10px] ${asset.positive ? "text-[#0ECB81]" : "text-[#F6465D]"}`}>
+                  <p className="text-white font-semibold text-sm">
+                    {formatNumber(asset.price)}
+                  </p>
+                  <p
+                    className={`text-[10px] ${asset.positive ? "text-[#0ECB81]" : "text-[#F6465D]"}`}
+                  >
                     {asset.change}
                   </p>
                 </div>
@@ -964,7 +894,9 @@ const HomeScreen = () => {
                 </div>
                 <div>
                   <p className="text-[#A0A5AA] text-[9px]">Holdings</p>
-                  <p className="text-white text-xs font-medium">${formatPrice(asset.value)}</p>
+                  <p className="text-white text-xs font-medium">
+                    ${formatPrice(asset.value)}
+                  </p>
                 </div>
                 <div className="flex gap-1.5">
                   <button
@@ -1023,12 +955,16 @@ const HomeScreen = () => {
                 </div>
                 <div>
                   <h3 className="text-white font-semibold text-base">
-                    {transactionType === "send" ? "Send" : "Receive"} {selectedAsset.symbol}
+                    {transactionType === "send" ? "Send" : "Receive"}{" "}
+                    {selectedAsset.symbol}
                   </h3>
                   <p className="text-[#A0A5AA] text-xs">{selectedAsset.name}</p>
                 </div>
               </div>
-              <button onClick={() => setShowTransactionModal(false)} className="text-[#A0A5AA]">
+              <button
+                onClick={() => setShowTransactionModal(false)}
+                className="text-[#A0A5AA]"
+              >
                 ✕
               </button>
             </div>
@@ -1038,15 +974,22 @@ const HomeScreen = () => {
                 <div className="mb-4 p-3 bg-[#2B3139]/50 rounded-xl">
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-[#A0A5AA] text-[9px]">Available Balance</p>
-                      <p className="text-white font-semibold text-base">
-                        {selectedAsset.amount.toLocaleString()} {selectedAsset.symbol}
+                      <p className="text-[#A0A5AA] text-[9px]">
+                        Available Balance
                       </p>
-                      <p className="text-[#A0A5AA] text-[9px]">≈ {formatNumber(selectedAsset.value)}</p>
+                      <p className="text-white font-semibold text-base">
+                        {selectedAsset.amount.toLocaleString()}{" "}
+                        {selectedAsset.symbol}
+                      </p>
+                      <p className="text-[#A0A5AA] text-[9px]">
+                        ≈ {formatNumber(selectedAsset.value)}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="text-[#A0A5AA] text-[9px]">Network</p>
-                      <p className="text-white text-xs font-medium">{selectedAsset.chain.toUpperCase()}</p>
+                      <p className="text-white text-xs font-medium">
+                        {selectedAsset.chain.toUpperCase()}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1062,7 +1005,9 @@ const HomeScreen = () => {
                       className="w-full p-2.5 bg-[#2B3139] rounded-xl text-white text-sm placeholder-[#A0A5AA] focus:outline-none border border-transparent focus:border-[#F0B90B]"
                     />
                     <button
-                      onClick={() => setTransactionAmount(selectedAsset.amount.toString())}
+                      onClick={() =>
+                        setTransactionAmount(selectedAsset.amount.toString())
+                      }
                       className="absolute right-3 top-2 text-[#F0B90B] text-xs font-semibold"
                     >
                       MAX
@@ -1071,7 +1016,9 @@ const HomeScreen = () => {
                 </div>
 
                 <div className="mb-4">
-                  <p className="text-[#A0A5AA] text-xs mb-2">Recipient Address</p>
+                  <p className="text-[#A0A5AA] text-xs mb-2">
+                    Recipient Address
+                  </p>
                   <input
                     type="text"
                     value={transactionAddress}
@@ -1082,42 +1029,89 @@ const HomeScreen = () => {
                 </div>
 
                 <div className="mb-4 p-2.5 bg-[#2B3139]/50 rounded-xl">
-                  <p className="text-[#A0A5AA] text-[10px]">Network Fee: ~$0.50</p>
-                  <p className="text-[#A0A5AA] text-[10px]">Estimated Arrival: 5-10 minutes</p>
+                  <p className="text-[#A0A5AA] text-[10px]">
+                    Network Fee: ~$0.50
+                  </p>
+                  <p className="text-[#A0A5AA] text-[10px]">
+                    Estimated Arrival: 5-10 minutes
+                  </p>
                   <p className="text-[#F6465D] text-[10px] mt-1">
-                    ⚠️ Only send {selectedAsset.symbol} to {selectedAsset.symbol} addresses
+                    ⚠️ Only send {selectedAsset.symbol} to{" "}
+                    {selectedAsset.symbol} addresses
                   </p>
                 </div>
               </>
             )}
 
-            {transactionType === "receive" && (
-              <div className="text-center">
-                <div className="mb-4 p-4 bg-[#2B3139] rounded-xl">
-                  <p className="text-[#A0A5AA] text-xs mb-2">Your {selectedAsset.symbol} Address</p>
-                  <div className="bg-[#0A0B0D] p-3 rounded-lg">
-                    <p className="text-white text-xs font-mono break-all">{selectedAsset.receiveAddress}</p>
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(selectedAsset.receiveAddress)}
-                    className="mt-3 w-full py-2 bg-[#F0B90B]/10 rounded-lg text-[#F0B90B] text-xs font-semibold hover:bg-[#F0B90B]/20 transition-all flex items-center justify-center gap-2"
-                  >
-                    {copiedAddress ? <Check size={14} /> : <Copy size={14} />}
-                    {copiedAddress ? "Copied!" : "Copy Address"}
-                  </button>
-                </div>
+            {transactionType === "receive" &&
+              (() => {
+                const selectedWallet = wallet.find(
+                  (w) =>
+                    w.chain?.toUpperCase() ===
+                    selectedAsset.name?.toUpperCase(),
+                );
 
-                <div className="mb-4 p-2.5 bg-[#2B3139]/50 rounded-xl">
-                  <p className="text-[#F0B90B] text-[10px] font-semibold">Network: {selectedAsset.chain.toUpperCase()}</p>
-                  <p className="text-[#A0A5AA] text-[10px] mt-1">⚠️ Only send {selectedAsset.symbol} to this address</p>
-                  <p className="text-[#A0A5AA] text-[10px]">Minimum deposit: 0.001 {selectedAsset.symbol}</p>
-                  <p className="text-[#A0A5AA] text-[10px] mt-1">⏱️ Estimated arrival: 5-10 minutes</p>
-                </div>
-              </div>
-            )}
+                return (
+                  <div className="text-center">
+                    <div className="mb-4 p-4 bg-[#2B3139] rounded-xl">
+                      <p className="text-[#A0A5AA] text-xs mb-2">
+                        Your {selectedAsset.symbol} Address
+                      </p>
+
+                      <div className="bg-[#0A0B0D] p-3 rounded-lg">
+                        <p className="text-white text-xs font-mono break-all">
+                          {selectedWallet?.address ||
+                            "Wallet address not found"}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          copyToClipboard(selectedWallet?.address || "")
+                        }
+                        className="mt-3 w-full py-2 bg-[#F0B90B]/10 rounded-lg text-[#F0B90B] text-xs font-semibold hover:bg-[#F0B90B]/20 transition-all flex items-center justify-center gap-2"
+                      >
+                        {copiedAddress ? (
+                          <Check size={14} />
+                        ) : (
+                          <Copy size={14} />
+                        )}
+                        {copiedAddress ? "Copied!" : "Copy Address"}
+                      </button>
+                    </div>
+
+                    <div className="mb-4 p-2.5 bg-[#2B3139]/50 rounded-xl">
+                      <p className="text-[#F0B90B] text-[10px] font-semibold">
+                        Network: {selectedWallet?.chain?.toUpperCase() || "N/A"}
+                      </p>
+
+                      <p className="text-[#A0A5AA] text-[10px] mt-1">
+                        ⚠️ Only send {selectedAsset.symbol} to this address
+                      </p>
+
+                      <p className="text-[#A0A5AA] text-[10px]">
+                        Minimum deposit: 0.001 {selectedAsset.symbol}
+                      </p>
+
+                      <p className="text-[#A0A5AA] text-[10px] mt-1">
+                        ⏱️ Estimated arrival: 5-10 minutes
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
 
             <button
-              onClick={transactionType === "send" ? executeTransaction : () => copyToClipboard(selectedAsset.receiveAddress)}
+              onClick={
+                transactionType === "send"
+                  ? executeTransaction
+                  : () =>
+                      copyToClipboard(
+                        selectedAsset.symbol === wallet.chain
+                          ? wallet.address
+                          : "",
+                      )
+              }
               className="w-full py-2.5 bg-[#F0B90B] rounded-xl text-[#0A0B0D] text-sm font-semibold mt-2 active:scale-95 transition-transform"
             >
               {transactionType === "send" ? "Send Now" : "Copy Address"}
@@ -1167,7 +1161,7 @@ const MarketScreen = () => {
     let filtered = MARKET_DATA.filter(
       (coin) =>
         coin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        coin.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+        coin.symbol.toLowerCase().includes(searchTerm.toLowerCase()),
     );
 
     filtered.sort((a, b) => {
@@ -1216,7 +1210,9 @@ const MarketScreen = () => {
       <div className="bg-linear-to-r from-[#F0B90B]/10 via-[#F0B90B]/5 to-transparent rounded-xl p-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[#F0B90B] text-xs font-semibold">Market Overview</p>
+            <p className="text-[#F0B90B] text-xs font-semibold">
+              Market Overview
+            </p>
             <p className="text-white text-sm font-bold">Crypto Prices</p>
             <p className="text-[#A0A5AA] text-[10px] mt-0.5">
               Real-time cryptocurrency prices and market data
@@ -1318,7 +1314,9 @@ const MarketScreen = () => {
                   {coin.icon}
                 </div>
                 <div>
-                  <p className="text-white font-semibold text-sm">{coin.name}</p>
+                  <p className="text-white font-semibold text-sm">
+                    {coin.name}
+                  </p>
                   <p className="text-[#A0A5AA] text-[9px]">{coin.symbol}/USD</p>
                 </div>
               </div>
@@ -1329,7 +1327,8 @@ const MarketScreen = () => {
                 <p
                   className={`text-[10px] font-semibold ${coin.positive ? "text-[#0ECB81]" : "text-[#F6465D]"}`}
                 >
-                  {coin.positive ? "+" : ""}{coin.change}%
+                  {coin.positive ? "+" : ""}
+                  {coin.change}%
                 </p>
               </div>
             </div>
@@ -1337,16 +1336,21 @@ const MarketScreen = () => {
             <div className="flex justify-between items-center pt-2 border-t border-[#2B3139]">
               <div>
                 <p className="text-[#A0A5AA] text-[8px]">Market Cap</p>
-                <p className="text-white text-[10px] font-medium">{coin.marketCap}</p>
+                <p className="text-white text-[10px] font-medium">
+                  {coin.marketCap}
+                </p>
               </div>
               <div>
                 <p className="text-[#A0A5AA] text-[8px]">24h Volume</p>
-                <p className="text-white text-[10px] font-medium">{coin.volume24h}</p>
+                <p className="text-white text-[10px] font-medium">
+                  {coin.volume24h}
+                </p>
               </div>
               <div>
                 <p className="text-[#A0A5AA] text-[8px]">24h Range</p>
                 <p className="text-white text-[10px] font-medium">
-                  {coin.low24h.toLocaleString()} - {coin.high24h.toLocaleString()}
+                  {coin.low24h.toLocaleString()} -{" "}
+                  {coin.high24h.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -1379,7 +1383,9 @@ const MarketScreen = () => {
                   <h3 className="text-white font-bold text-lg">
                     {selectedCoin.name}
                   </h3>
-                  <p className="text-[#A0A5AA] text-xs">{selectedCoin.symbol}/USD</p>
+                  <p className="text-[#A0A5AA] text-xs">
+                    {selectedCoin.symbol}/USD
+                  </p>
                 </div>
               </div>
               <button
@@ -1403,7 +1409,8 @@ const MarketScreen = () => {
                   <span
                     className={`text-xs font-semibold ${selectedCoin.positive ? "text-[#0ECB81]" : "text-[#F6465D]"}`}
                   >
-                    {selectedCoin.positive ? "+" : ""}{selectedCoin.change}%
+                    {selectedCoin.positive ? "+" : ""}
+                    {selectedCoin.change}%
                   </span>
                 </div>
               </div>
@@ -1423,11 +1430,15 @@ const MarketScreen = () => {
                 </div>
                 <div className="p-3 bg-[#2B3139] rounded-xl">
                   <p className="text-[#A0A5AA] text-[9px]">Market Cap</p>
-                  <p className="text-white text-sm font-semibold">{selectedCoin.marketCap}</p>
+                  <p className="text-white text-sm font-semibold">
+                    {selectedCoin.marketCap}
+                  </p>
                 </div>
                 <div className="p-3 bg-[#2B3139] rounded-xl">
                   <p className="text-[#A0A5AA] text-[9px]">24h Volume</p>
-                  <p className="text-white text-sm font-semibold">{selectedCoin.volume24h}</p>
+                  <p className="text-white text-sm font-semibold">
+                    {selectedCoin.volume24h}
+                  </p>
                 </div>
               </div>
 
@@ -3139,8 +3150,9 @@ const Header = ({ user, onLogout }) => {
 const UI = () => {
   const [activeTab, setActiveTab] = useState("home");
   const { user, account, wallet, loading, logout } = useMe();
+  const {assets, price_loading } = useCryptoPrices(account || [])
 
-  if (loading) return <LoadingSpinner />;
+  if (loading || price_loading) return <LoadingSpinner />;
 
   const handleLogout = async () => {
     await logout?.();
@@ -3149,7 +3161,7 @@ const UI = () => {
   const renderScreen = () => {
     switch (activeTab) {
       case "home":
-        return <HomeScreen />;
+        return <HomeScreen assets={assets} wallet={wallet} />;
       case "market":
         return <MarketScreen />;
       case "exchange":

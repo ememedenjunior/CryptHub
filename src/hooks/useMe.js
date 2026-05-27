@@ -18,7 +18,7 @@ export default function useMe() {
 
         setUser(res.data.user);
         setAccount(res.data.account);
-        setWallet(res.data.wallet);
+        setWallet(res.data.wallets);
       } catch (err) {
         setError(err.response?.data || "Request failed");
       } finally {

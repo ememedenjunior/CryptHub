@@ -36,6 +36,8 @@ const SignUpPage = () => {
   const [isResending, setIsResending] = useState(false);
   const [apiError, setApiError] = useState('');
 
+  const uri = "https://bitnex-production.up.railway.app"
+
   const validateForm = () => {
     const newErrors = {};
     
@@ -110,7 +112,7 @@ const SignUpPage = () => {
     
     try {
       // Send registration data to localhost:8000/api/register
-      const response = await fetch('https://bitnex-production.up.railway.app/api/auth/register', {
+      const response = await fetch(`${uri}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,8 +135,7 @@ const SignUpPage = () => {
       setShowSuccess(true);
       
     } catch (error) {
-      console.error('Registration error:', error);
-      setApiError(error.message || 'Failed to create account. Please try again.');
+      setApiError('Failed to create account or user already exists.');
       
       // Auto-hide error after 5 seconds
       setTimeout(() => setApiError(''), 5000);
@@ -154,7 +155,7 @@ const SignUpPage = () => {
 
     try {
       // Send verification code to /api/verify with token as query parameter
-      const response = await fetch(`https://bitnex-production.up.railway.app/api/auth/verify?token=${verificationCode}`, {
+      const response = await fetch(`${uri}/api/auth/verify?token=${verificationCode}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -194,7 +195,7 @@ const SignUpPage = () => {
 
     try {
       // Request new token from /api/resend
-      const response = await fetch('https://bitnex-production.up.railway.app/api/auth/resend', {
+      const response = await fetch(`${uri}/api/auth/resend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

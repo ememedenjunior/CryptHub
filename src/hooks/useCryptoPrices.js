@@ -2,12 +2,125 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 const ASSETS = [
-  { id: 1, key: "bitcoin", symbol: "BTC", name: "Bitcoin", icon: "₿", color: "#F7931A", chain: "bitcoin", website: "https://bitcoin.org", explorer: "https://blockstream.info", decimals: 8, contractAddress: "Native Token", supportsInternalTransfer: true },
-  { id: 2, key: "ethereum", symbol: "ETH", name: "Ethereum", icon: "Ξ", color: "#627EEA", chain: "ethereum", website: "https://ethereum.org", explorer: "https://etherscan.io", decimals: 18, contractAddress: "Native Token", supportsInternalTransfer: true },
-  { id: 3, key: "binancecoin", symbol: "BNB", name: "BNB", icon: "B", color: "#F3BA2F", chain: "bsc", website: "https://bnbchain.org", explorer: "https://bscscan.com", decimals: 18, contractAddress: "Native Token", supportsInternalTransfer: true },
-  { id: 4, key: "solana", symbol: "SOL", name: "Solana", icon: "◎", color: "#00FFA3", chain: "solana", website: "https://solana.com", explorer: "https://solscan.io", decimals: 9, contractAddress: "Native Token", supportsInternalTransfer: true },
-  { id: 5, key: "ripple", symbol: "XRP", name: "XRP", icon: "X", color: "#23292F", chain: "ripple", website: "https://xrpl.org", explorer: "https://xrpscan.com", decimals: 6, contractAddress: "Native Token", supportsInternalTransfer: true },
-  { id: 6, key: "sui", symbol: "SUI", name: "Sui", icon: "S", color: "#6BCBEF", chain: "sui", website: "https://sui.io", explorer: "https://suiscan.xyz", decimals: 9, contractAddress: "Native Token", supportsInternalTransfer: true },
+  {
+    id: 1,
+    key: "bitcoin",
+    symbol: "BTC",
+    name: "Bitcoin",
+    icon: "₿",
+    color: "#F7931A",
+    chain: "bitcoin",
+    website: "https://bitcoin.org",
+    explorer: "https://blockstream.info",
+    decimals: 8,
+    contractAddress: "Native Token",
+    supportsInternalTransfer: true,
+  },
+
+  {
+    id: 2,
+    key: "ethereum",
+    symbol: "ETH",
+    name: "Ethereum",
+    icon: "Ξ",
+    color: "#627EEA",
+    chain: "ethereum",
+    website: "https://ethereum.org",
+    explorer: "https://etherscan.io",
+    decimals: 18,
+    contractAddress: "Native Token",
+    supportsInternalTransfer: true,
+  },
+
+  {
+    id: 3,
+    key: "binancecoin",
+    symbol: "BNB",
+    name: "BNB",
+    icon: "B",
+    color: "#F3BA2F",
+    chain: "bsc",
+    website: "https://bnbchain.org",
+    explorer: "https://bscscan.com",
+    decimals: 18,
+    contractAddress: "Native Token",
+    supportsInternalTransfer: true,
+  },
+
+  {
+    id: 4,
+    key: "solana",
+    symbol: "SOL",
+    name: "Solana",
+    icon: "◎",
+    color: "#00FFA3",
+    chain: "solana",
+    website: "https://solana.com",
+    explorer: "https://solscan.io",
+    decimals: 9,
+    contractAddress: "Native Token",
+    supportsInternalTransfer: true,
+  },
+
+  {
+    id: 5,
+    key: "ripple",
+    symbol: "XRP",
+    name: "XRP",
+    icon: "X",
+    color: "#23292F",
+    chain: "ripple",
+    website: "https://xrpl.org",
+    explorer: "https://xrpscan.com",
+    decimals: 6,
+    contractAddress: "Native Token",
+    supportsInternalTransfer: true,
+  },
+
+  {
+    id: 6,
+    key: "sui",
+    symbol: "SUI",
+    name: "Sui",
+    icon: "S",
+    color: "#6BCBEF",
+    chain: "sui",
+    website: "https://sui.io",
+    explorer: "https://suiscan.xyz",
+    decimals: 9,
+    contractAddress: "Native Token",
+    supportsInternalTransfer: true,
+  },
+
+  {
+    id: 7,
+    key: "algorand",
+    symbol: "ALGO",
+    name: "Algorand",
+    icon: "A",
+    color: "#000000",
+    chain: "algorand",
+    website: "https://algorand.org",
+    explorer: "https://algoexplorer.io",
+    decimals: 6,
+    contractAddress: "Native Token",
+    supportsInternalTransfer: true,
+  },
+
+  {
+    id: 8,
+    key: "tron",
+    symbol: "TRX",
+    name: "Tron",
+    icon: "T",
+    color: "#FF0013",
+    chain: "tron",
+    website: "https://tron.network",
+    explorer: "https://tronscan.org",
+    decimals: 6,
+    contractAddress: "Native Token",
+    supportsInternalTransfer: true,
+  },
 ];
 
 export const useCryptoPrices = (accounts = [], refreshInterval = 100000) => {
@@ -23,6 +136,8 @@ export const useCryptoPrices = (accounts = [], refreshInterval = 100000) => {
       SOLANA: "solana",
       XRP: "ripple",
       SUI: "sui",
+      ALGORAND: "algorand",
+      TRON: "tron",
     };
     return map[asset?.toUpperCase()] || asset?.toLowerCase();
   };
@@ -41,7 +156,7 @@ export const useCryptoPrices = (accounts = [], refreshInterval = 100000) => {
             ids,
             price_change_percentage: "24h",
           },
-        }
+        },
       );
 
       const marketData = res.data;
@@ -56,7 +171,7 @@ export const useCryptoPrices = (accounts = [], refreshInterval = 100000) => {
 
         // find user holding
         const holding = accounts.find(
-          (h) => normalizeAsset(h.asset) === asset.key
+          (h) => normalizeAsset(h.asset) === asset.key,
         );
 
         const amount = parseFloat(holding?.balance || 0);
